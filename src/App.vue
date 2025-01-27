@@ -67,7 +67,7 @@ onMounted(() => {
 aside{
   background-color: #F5F2F8;
   width: 22%;
-  border-right:1px solid #C2C0C4;
+  border-right:2px solid #E1DDE4;
 }
 
 .logo{
@@ -80,12 +80,6 @@ aside{
 #app-contenido{
   display: flex;
 }
-
-
-
-
-
-
 
 
 .fixed-bottom {
