@@ -22,7 +22,7 @@ import { RouterLink } from 'vue-router'
 
 #playlist-title{
   border-top: 1px solid #E1DDE4;
-  margin-top: 12px;
+  margin-top: 145px;
   padding: 0.5rem;
   font-size: 1.2rem;
   font-weight: bold;
@@ -33,6 +33,7 @@ import { RouterLink } from 'vue-router'
     list-style: none;
     margin: 0;
     padding: 1.2rem;
+    margin-bottom: 250px;
 
 
     li{

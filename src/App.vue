@@ -21,7 +21,7 @@ onMounted(() => {
  <div id="app-contenido">
    <WelcomeModal v-if="!user" />
    
-  <aside class="w-64 h-screen py-3">
+  <aside class="h-screen py-3">
       <div>
         <img class="logo" :src="deezerLogo" alt="">
         
@@ -44,17 +44,12 @@ onMounted(() => {
   </aside>
 
  <!-- Main Content -->
- <main class="container my-4">
+ <main class="container my-4 p-0">
      <router-view />
    </main>
 
-   
    <MusicPlayer ref="player" /> 
 
- 
-
-
-  
 </div>
 
 
@@ -66,7 +61,7 @@ onMounted(() => {
 
 aside{
   background-color: #F5F2F8;
-  width: 22%;
+  width: 25%;
   border-right:2px solid #E1DDE4;
 }
 
@@ -88,9 +83,5 @@ aside{
  width: 100%;
  z-index: 1000;
 }
-
-
-
-
 
 </style>

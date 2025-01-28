@@ -1,92 +1,302 @@
 <template>
-  <div>
-    <h1>Búsqueda de canciones en Deezer</h1>
-    <!-- Componente hijo -->
-    <SearchBar @results="handleResults" />
-    <hr />
+  <div class="search-page">
+    <SearchBar :initialQuery="$route.query.q || ''" />
     
-    <div class="filters mb-4">
-      <div class="row">
-        <div class="col-md-6">
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" v-model="sortAscending" id="sortCheck">
-            <label class="form-check-label" for="sortCheck">
-              Ordenar por nombre (ascendente)
-            </label>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="form-group">
-            <label for="duration">Duración mínima (segundos):</label>
-            <input type="number" class="form-control" id="duration" v-model="minDuration" placeholder="Ejemplo: 100">
-          </div>
-        </div>
+    <div class="results-container">
+      <div v-if="loading" class="loading">
+        <p>Buscando...</p>
       </div>
-    </div>
-
-    <!-- Resultados -->
-    <div v-if="songs.length" class="row g-3">
-      <div v-for="song in filteredAndSortedSongs" :key="song.id" class="col-md-4">
-        <div class="card h-100">
-          <img :src="song.album.cover_medium" class="card-img-top" :alt="song.title">
-          <div class="card-body">
-            <h5 class="card-title">{{ song.title }}</h5>
-            <p class="card-text">
-              <router-link :to="`/info/artist/${song.artist.id}`" class="text-decoration-none">
-                {{ song.artist.name }}
+      
+      <div v-else-if="results.length > 0" class="results-grid">
+        <div v-for="item in results" 
+             :key="item.id" 
+             class="result-card">
+          <img :src="item.album?.cover_medium" :alt="item.title">
+          <div class="item-info">
+            <h3>{{ item.title }}</h3>
+            <p class="artist">
+              <router-link :to="`/artist/${item.artist.id}`">
+                {{ item.artist?.name }}
               </router-link>
             </p>
-            <div class="d-flex justify-content-between align-items-center">
-              <router-link :to="`/info/song/${song.id}`" class="btn btn-primary">
-                <i class="bi bi-info-circle"></i> Detalles
+            <p class="album">
+              <router-link :to="`/album/${item.album.id}`">
+                {{ item.album?.title }}
               </router-link>
-              <router-link :to="`/info/album/${song.album.id}`" class="btn btn-secondary">
-                <i class="bi bi-disc"></i> Álbum
-              </router-link>
+            </p>
+            <div class="details">
+              <span class="duration">{{ formatDuration(item.duration) }}</span>
+              <div class="actions">
+                <button class="play-button" @click.stop="playSong(item)">
+                  <i class="bi bi-play-fill"></i>
+                </button>
+                <button class="add-queue-button" @click.stop="addToQueue(item)">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      <div v-else-if="hasSearched" class="no-results">
+        <p>No se encontraron resultados</p>
+      </div>
     </div>
-    <p v-else class="text-center mt-4">No hay resultados para mostrar</p>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import SearchBar from "../components/SearchBar.vue";
+import { ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { usePlayerStore } from '../stores/player';
+import SearchBar from '../components/SearchBar.vue';
 
-const songs = ref([]);
-const sortAscending = ref(false);
-const minDuration = ref(0);
+const route = useRoute();
+const playerStore = usePlayerStore();
+const loading = ref(false);
+const results = ref([]);
+const hasSearched = ref(false);
 
-const filteredAndSortedSongs = computed(() => {
-  let result = [...songs.value];
+const fetchResults = async (query, filters) => {
+  loading.value = true;
+  hasSearched.value = true;
 
-  if (minDuration.value > 0) {
-    result = result.filter(song => song.duration && song.duration >= minDuration.value);
+  try {
+    let baseQuery = '';
+    
+    if (query?.trim()) {
+      baseQuery = query.trim();
+    }
+    
+    if (filters.genre) {
+      baseQuery = baseQuery ? `${baseQuery} genre:"${filters.genre}"` : `genre:"${filters.genre}"`;
+    }
+    
+    if (!baseQuery) {
+      baseQuery = 'a';
+    }
+
+    const url = `http://localhost:8080/https://api.deezer.com/search?q=${encodeURIComponent(baseQuery)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    let filtered = data.data || [];
+
+    if (filters.year) {
+      filtered = filtered.filter(item => {
+        if (!item.album?.release_date) return false;
+        const year = new Date(item.album.release_date).getFullYear();
+        
+        switch (filters.year) {
+          case 'older':
+            return year < 1960;
+          case '2020':
+            return year >= 2020;
+          case '2010':
+            return year >= 2010 && year < 2020;
+          case '2000':
+            return year >= 2000 && year < 2010;
+          case '1990':
+            return year >= 1990 && year < 2000;
+          case '1980':
+            return year >= 1980 && year < 1990;
+          case '1970':
+            return year >= 1970 && year < 1980;
+          case '1960':
+            return year >= 1960 && year < 1970;
+          default:
+            return true;
+        }
+      });
+    }
+
+    if (filters.duration) {
+      const maxDurationSeconds = filters.duration * 60;
+      filtered = filtered.filter(item => item.duration <= maxDurationSeconds);
+    }
+
+    results.value = filtered;
+  } catch (error) {
+    console.error('Error:', error);
+    results.value = [];
+  } finally {
+    loading.value = false;
   }
-
-  if (sortAscending.value) {
-    result.sort((a, b) => a.title.localeCompare(b.title));
-  } else {
-    result.sort((a, b) => b.title.localeCompare(a.title));
-  }
-
-  return result;
-});
-
-const handleResults = (data) => {
-  songs.value = data;
 };
+
+const formatDuration = (seconds) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+const playSong = (song) => {
+  playerStore.playSong(song);
+};
+
+const addToQueue = (song) => {
+  playerStore.addToQueue(song);
+};
+
+watch(
+  () => route.query,
+  (newQuery) => {
+    fetchResults(newQuery.q, {
+      genre: newQuery.genre,
+      year: newQuery.year,
+      duration: newQuery.duration
+    });
+  },
+  { immediate: true, deep: true }
+);
 </script>
 
 <style scoped>
-.card {
-  transition: transform 0.2s;
+.search-page {
+  padding: 20px;
 }
-.card:hover {
+
+.results-container {
+  max-width: 1200px;
+  margin: 20px auto;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.result-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+  cursor: pointer;
+  position: relative;
+}
+
+.result-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.result-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.item-info {
+  padding: 15px;
+  transition: background-color 0.2s;
+}
+
+.result-card:hover .item-info {
+  background-color: #f8f9fa;
+}
+
+.item-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+.artist a, .album a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s;
+}
+
+.artist a:hover {
+  color: #007bff;
+}
+
+.album a:hover {
+  color: #0056b3;
+}
+
+.artist {
+  color: #666;
+  margin: 5px 0;
+}
+
+.album {
+  color: #888;
+  font-size: 0.9rem;
+  margin: 5px 0;
+}
+
+.details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.play-button, .add-queue-button {
+  background: #007bff;
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.add-queue-button {
+  background: #6c757d;
+}
+
+.play-button:hover, .add-queue-button:hover {
+  transform: scale(1.1);
+}
+
+.play-button:hover {
+  background: #0056b3;
+}
+
+.add-queue-button:hover {
+  background: #5a6268;
+}
+
+.duration {
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.loading, .no-results {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+  }
+  
+  .duration {
+    font-size: 0.7rem;
+  }
 }
 </style>

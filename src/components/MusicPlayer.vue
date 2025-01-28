@@ -1,6 +1,6 @@
 <!-- components/MusicPlayer.vue -->
 <template>
-  <div class="music-player fixed-bottom p-3" style="background-color: #F5F2F8;">
+  <div class="music-player fixed-bottom p-2">
     <div class="container">
       <div class="row align-items-center">
         <div class="col-md-4">
@@ -163,6 +163,7 @@ const handleEnded = () => {
 
 .music-player{
   border-top: 2px solid #E1DDE4;
+  background-color: #F5F2F8;
 }
 
 

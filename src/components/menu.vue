@@ -57,14 +57,16 @@ $hover-text-color: #A238FF;
 }
 
 .suscribe{
+  position: absolute;
   display: block;
-  width: 251px;
+  width: 260px;
   height: 120px;
   background-color: $hover-text-color;
   color: white;
   padding: 16px;
   border-radius: 5px;
   margin-left: 0.5rem;
+  z-index: 2;
 
   button{
     background-color: #471970;

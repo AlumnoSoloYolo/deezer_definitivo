@@ -4,7 +4,7 @@
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
         <h3 class="mb-0">Mi Playlist    <i class="bi bi-music-note-list"></i></h3>
-        <span class="badge bg-primary">{{ playlist.length }} canciones</span>
+        <span class="badge">{{ playlist.length }} canciones</span>
       </div>
       <div class="card-body">
         <div class="list-group">
@@ -43,3 +43,10 @@ const playSong = (song) => {
 
 
 </script>
+
+<style scoped>
+
+.badge{
+  background-color: #A435FF;
+}
+</style>
