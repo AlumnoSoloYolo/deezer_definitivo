@@ -1,38 +1,42 @@
+# src/components/UserModal.vue
 <template>
-  <div class="modal-overlay" v-if="showModal">
-    <div class="modal-wrapper">
-      <div class="modal-content">
-        <h2>Bienvenido a Deezer Music Client</h2>
-        <div class="input-group">
-          <label for="userName">¿Cómo te llamas?</label>
-          <input
-            id="userName"
-            v-model="userName"
-            placeholder="Tu nombre"
-            type="text"
-            @keyup.enter="saveUser"
-          />
-        </div>
-        <div class="avatar-selection">
-          <h3>Elige tu avatar</h3>
-          <div class="avatar-grid">
-            <div 
-              v-for="avatar in avatars" 
-              :key="avatar.id"
-              :class="['avatar-option', { selected: selectedAvatar === avatar.id }]"
-              @click="selectAvatar(avatar.id)"
-            >
-              <img :src="avatar.url" :alt="avatar.name">
+  <div class="modal-container" v-if="showModal">
+    <AnimatedMountains />
+    <div class="modal-overlay">
+      <div class="modal-wrapper">
+        <div class="modal-content">
+          <h2>Bienvenido a Deezer Music Client</h2>
+          <div class="input-group">
+            <label for="userName">¿Cómo te llamas?</label>
+            <input
+              id="userName"
+              v-model="userName"
+              placeholder="Tu nombre"
+              type="text"
+              @keyup.enter="saveUser"
+            />
+          </div>
+          <div class="avatar-selection">
+            <h3>Elige tu avatar</h3>
+            <div class="avatar-grid">
+              <div
+                v-for="avatar in avatars"
+                :key="avatar.id"
+                :class="['avatar-option', { selected: selectedAvatar === avatar.id }]"
+                @click="selectAvatar(avatar.id)"
+              >
+                <img :src="avatar.url" :alt="avatar.name">
+              </div>
             </div>
           </div>
+          <button
+            @click="saveUser"
+            :disabled="!userName.trim()"
+            class="start-button"
+          >
+            Comenzar
+          </button>
         </div>
-        <button 
-          @click="saveUser"
-          :disabled="!userName.trim()"
-          class="start-button"
-        >
-          Comenzar
-        </button>
       </div>
     </div>
   </div>
@@ -40,6 +44,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import AnimatedMountains from './AnimatedMountains.vue';
 
 const showModal = ref(true);
 const userName = ref('');
@@ -57,7 +62,6 @@ const selectAvatar = (id) => {
 };
 
 onMounted(() => {
-  // Comprobar si ya existe un usuario
   const existingUser = localStorage.getItem('user');
   if (existingUser) {
     showModal.value = false;
@@ -76,17 +80,29 @@ const saveUser = () => {
 </script>
 
 <style scoped>
-.modal-overlay {
+.modal-container {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
+  width: 100%;
+  height: 100%;
 }
 
 .modal-wrapper {
@@ -95,7 +111,9 @@ const saveUser = () => {
   padding: 2rem;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 10001;
 }
 
 .modal-content {
@@ -105,6 +123,7 @@ const saveUser = () => {
 .modal-content h2 {
   color: #333;
   margin-bottom: 2rem;
+  font-size: 1.8rem;
 }
 
 .input-group {
@@ -116,6 +135,7 @@ const saveUser = () => {
   display: block;
   margin-bottom: 0.5rem;
   color: #666;
+  font-size: 1rem;
 }
 
 input {
@@ -124,6 +144,11 @@ input {
   border: 2px solid #E1DDE4;
   border-radius: 8px;
   font-size: 1rem;
+}
+
+input:focus {
+  border-color: #A238FF;
+  outline: none;
 }
 
 .avatar-selection {
@@ -157,23 +182,31 @@ input {
 }
 
 .avatar-option.selected {
-  border-color: #007bff;
-  background: #f0f7ff;
+  border-color: #A238FF;
+  background: #f8f0ff;
+}
+
+.avatar-option:hover {
+  transform: scale(1.05);
 }
 
 .start-button {
-  background: #007bff;
+  background: #A238FF;
   color: white;
   border: none;
   padding: 1rem 2rem;
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  width: 100%;
+  max-width: 200px;
 }
 
-.start-button:hover {
-  background: #0056b3;
+.start-button:hover:not(:disabled) {
+  background: #8929e0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(162, 56, 255, 0.3);
 }
 
 .start-button:disabled {

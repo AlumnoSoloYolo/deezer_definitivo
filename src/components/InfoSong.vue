@@ -1,23 +1,30 @@
 <template>
-  <div v-if="song" class="card">
-    <div class="row g-0">
-      <div class="col-md-4">
-        <img :src="song.album?.cover_big" class="img-fluid" :alt="song.title">
-      </div>
-      <div class="col-md-8">
-        <div class="card-body">
-          <h2 class="card-title">{{ song.title }}</h2>
-          <p class="card-text">Artista: {{ song.artist?.name }}</p>
-          <p class="card-text">Álbum: {{ song.album?.title }}</p>
-          <p class="card-text">Duración: {{ formatDuration(song.duration) }}</p>
-          
-          <div class="mt-4">
-            <button @click="toggleFavorite" class="btn me-2" :class="isFavorite ? 'btn-danger' : 'btn-outline-danger'">
-              <i class="bi bi-heart-fill"></i> {{ isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos' }}
-            </button>
-            <button @click="playSong" class="btn btn-primary">
-              <i class="bi bi-play-fill"></i> Reproducir
-            </button>
+  <div class="modal-backdrop" @click="closeModal">
+    <div class="modal-wrapper" @click.stop>
+      <div v-if="song" class="card border-0">
+        <div class="row g-0">
+          <div class="col-md-4">
+            <img :src="song.album?.cover_big" class="img-fluid song-cover" :alt="song.title">
+          </div>
+          <div class="col-md-8">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-4">
+                <h2 class="card-title">{{ song.title }}</h2>
+                <button class="btn-close" @click="closeModal"></button>
+              </div>
+              <p class="card-text">Artista: {{ song.artist?.name }}</p>
+              <p class="card-text">Álbum: {{ song.album?.title }}</p>
+              <p class="card-text">Duración: {{ formatDuration(song.duration) }}</p>
+              
+              <div class="mt-4">
+                <button @click="toggleFavorite" class="btn me-2" :class="isFavorite ? 'btn-danger' : 'btn-outline-danger'">
+                  <i class="bi bi-heart-fill"></i> {{ isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos' }}
+                </button>
+                <button @click="playSong" class="btn btn-primary">
+                  <i class="bi bi-play-fill"></i> Reproducir
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@
       </div>
       
       <div v-else-if="results.length > 0" class="results-grid">
+        
         <div v-for="item in results" 
              :key="item.id" 
              class="result-card">
@@ -27,6 +28,13 @@
             <div class="details">
               <span class="duration">{{ formatDuration(item.duration) }}</span>
               <div class="actions">
+                <button 
+                  class="favorite-button" 
+                  @click.stop="handleFavorite(item)"
+                  :class="{ 'is-favorite': favoritesStore.isFavorite(item.id) }"
+                >
+                  <i class="bi" :class="favoritesStore.isFavorite(item.id) ? 'bi-heart-fill' : 'bi-heart'"></i>
+                </button>
                 <button class="play-button" @click.stop="playSong(item)">
                   <i class="bi bi-play-fill"></i>
                 </button>
@@ -50,10 +58,12 @@
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePlayerStore } from '../stores/player';
+import { useFavoritesStore } from '../stores/favorites';
 import SearchBar from '../components/SearchBar.vue';
 
 const route = useRoute();
 const playerStore = usePlayerStore();
+const favoritesStore = useFavoritesStore();
 const loading = ref(false);
 const results = ref([]);
 const hasSearched = ref(false);
@@ -139,6 +149,14 @@ const addToQueue = (song) => {
   playerStore.addToQueue(song);
 };
 
+const handleFavorite = (song) => {
+  if (favoritesStore.isFavorite(song.id)) {
+    favoritesStore.removeSong(song.id);
+  } else {
+    favoritesStore.addSong(song);
+  }
+};
+
 watch(
   () => route.query,
   (newQuery) => {
@@ -153,9 +171,6 @@ watch(
 </script>
 
 <style scoped>
-.search-page {
-  padding: 20px;
-}
 
 .results-container {
   max-width: 1200px;
@@ -298,5 +313,55 @@ watch(
   .duration {
     font-size: 0.7rem;
   }
+}
+
+
+.favorite-button {
+  background: transparent;
+  color: #dc3545;
+  border: 2px solid #dc3545;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.favorite-button:hover {
+  transform: scale(1.1);
+  background: #dc3545;
+  color: white;
+}
+
+.favorite-button.is-favorite {
+  background: #dc3545;
+  color: white;
+}
+
+.favorite-button.is-favorite:hover {
+  background: #c82333;
+  border-color: #c82333;
+}
+
+@keyframes heartBeat {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.3); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.3); }
+  70% { transform: scale(1); }
+}
+
+.favorite-button.is-favorite i {
+  animation: heartBeat 1s;
+}
+
+/* Actualiza los estilos de actions para incluir el nuevo botón */
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 </style>

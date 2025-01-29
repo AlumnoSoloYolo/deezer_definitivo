@@ -3,7 +3,7 @@
   <div class="playlist-manager">
     <div class="card">
       <div class="card-header d-flex justify-content-between align-items-center">
-        <h3 class="mb-0">Mi Playlist    <i class="bi bi-music-note-list"></i></h3>
+        <h3 class="mb-0">Tus canciones favoritas    <i class="bi bi-music-note-list"></i></h3>
         <span class="badge">{{ playlist.length }} canciones</span>
       </div>
       <div class="card-body">
@@ -47,6 +47,6 @@ const playSong = (song) => {
 <style scoped>
 
 .badge{
-  background-color: #A435FF;
+  background-color: black;
 }
 </style>
