@@ -1,61 +1,124 @@
 <!-- SearchBar.vue -->
 <template>
-  <div class="search-container px-3">
+  <div class="search-container">
     <div class="search-wrapper">
-      <div class="search-input">
-        <input
-          type="text"
-          v-model="searchQuery"
-          @keyup.enter="searchDeezer"
-          placeholder="Canciones, artistas, podcasts..."
-        />
-        <button @click="searchDeezer">
-          <i class="bi bi-search"></i>
-        </button>
-        <button @click="toggleFilters" class="filter-toggle">
-          <i class="bi" :class="{'bi-funnel-fill': showFilters, 'bi-funnel': !showFilters}"></i>
-        </button>
+      <div class="search-input-group">
+        <div class="input-icon-wrapper">
+          <i class="bi bi-search search-icon"></i>
+          <input 
+            type="text" 
+            v-model="searchQuery" 
+            @keyup.enter="performSearch"
+            placeholder="Canciones, artistas, álbumes, playlists..." 
+            class="search-input"
+          >
+          <button 
+            v-if="searchQuery" 
+            class="clear-input-btn"
+            @click="clearSearch"
+          >
+            <i class="bi bi-x-circle-fill"></i>
+          </button>
+        </div>
       </div>
 
-      <!-- Panel de filtros desplegable -->
-      <div class="filters-panel" :class="{ 'show': showFilters }">
-        <div class="filter-group">
-          <select v-model="filters.genre" @change="searchDeezer">
-            <option value="">Todos los géneros</option>
-            <option value="132">Pop</option>
-            <option value="152">Rock</option>
-            <option value="116">Rap/Hip-Hop</option>
-            <option value="464">Latino</option>
-            <option value="113">Dance</option>
-            <option value="165">R&B</option>
-            <option value="144">Reggae</option>
-            <option value="129">Jazz</option>
-            <option value="98">Clásica</option>
-            <option value="173">Películas/Games</option>
-          </select>
+      <div class="search-actions">
+        <div class="action-buttons">
+          <button 
+            class="btn btn-filter" 
+            @click="toggleFiltersModal"
+          >
+            <i class="bi bi-sliders"></i>
+            <span>Filtros</span>
+          </button>
+          
+          <button 
+            class="btn btn-search" 
+            @click="performSearch"
+          >
+            <i class="bi bi-search"></i>
+            Buscar
+          </button>
+        </div>
+      </div>
+    </div>
 
-          <select v-model="filters.year" @change="searchDeezer">
-            <option value="">Todos los años</option>
-            <option value="2020">2020s</option>
-            <option value="2010">2010s</option>
-            <option value="2000">2000s</option>
-            <option value="1990">1990s</option>
-            <option value="1980">1980s</option>
-            <option value="1970">1970s</option>
-            <option value="1960">1960s</option>
-            <option value="older">Anterior a 1960</option>
-          </select>
+    <!-- Modal de Filtros Avanzados -->
+    <div 
+      v-if="showFiltersModal" 
+      class="filters-modal"
+    >
+      <div class="filters-content">
+        <div class="filters-header">
+          <h3>Filtros Avanzados</h3>
+          <button 
+            class="close-modal-btn" 
+            @click="toggleFiltersModal"
+          >
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
 
-          <div class="duration-filter">
-            <label>Duración máx. (min)</label>
-            <input 
-              type="number" 
-              v-model="filters.maxDuration"
-              min="1" 
-              max="30"
-              @change="searchDeezer"
-            >
+        <div class="filters-body">
+          <div class="filter-group">
+            <label>Género</label>
+            <select v-model="filters.genre">
+              <option value="">Todos los géneros</option>
+              <option 
+                v-for="genre in availableGenres" 
+                :key="genre.id" 
+                :value="genre.id"
+              >
+                {{ genre.name }}
+              </option>
+            </select>
           </div>
+
+          <div class="filter-group">
+            <label>Año de lanzamiento</label>
+            <div class="year-range">
+              <input 
+                type="number" 
+                v-model="filters.yearFrom"
+                placeholder="Desde"
+                min="1900"
+                :max="currentYear"
+              >
+              <input 
+                type="number" 
+                v-model="filters.yearTo"
+                placeholder="Hasta" 
+                min="1900"
+                :max="currentYear"
+              >
+            </div>
+          </div>
+
+          <div class="filter-group">
+            <label>Duración máxima</label>
+            <select v-model="filters.duration">
+              <option value="">Sin límite</option>
+              <option value="2">2 minutos</option>
+              <option value="3">3 minutos</option>
+              <option value="5">5 minutos</option>
+              <option value="10">10 minutos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filters-footer">
+          <button 
+            class="btn btn-reset" 
+            @click="resetFilters"
+          >
+            Restablecer
+          </button>
+          <button 
+            class="btn btn-apply" 
+            @click="applyFilters"
+          >
+            Aplicar
+          </button>
         </div>
       </div>
     </div>
@@ -63,151 +126,342 @@
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import { useRouter, useRoute } from 'vue-router';
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const props = defineProps({
-  initialQuery: {
-    type: String,
-    default: ''
+const route = useRoute()
+const router = useRouter()
+
+// Estados
+const searchQuery = ref(route.query.q || '')
+const showFiltersModal = ref(false)
+const currentYear = new Date().getFullYear()
+
+// Filtros
+const filters = ref({
+  genre: route.query.genre || '',
+  yearFrom: route.query.yearFrom || '',
+  yearTo: route.query.yearTo || '',
+  duration: route.query.duration || ''
+})
+
+// Géneros (simular datos de tu API)
+const availableGenres = ref([
+  { id: 132, name: 'Hip Hop' },
+  { id: 116, name: 'Rock' },
+  { id: 129, name: 'Pop' },
+  { id: 152, name: 'Electrónica' },
+  // Añade más géneros
+])
+
+// Métodos
+const toggleFiltersModal = () => {
+  showFiltersModal.value = !showFiltersModal.value
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
+const performSearch = () => {
+  const query = {}
+  
+  // Añadir término de búsqueda si existe
+  if (searchQuery.value) {
+    query.q = searchQuery.value
   }
-});
 
-const router = useRouter();
-const route = useRoute();
-const searchQuery = ref(props.initialQuery);
-const showFilters = ref(false);
-const filters = reactive({
-  genre: '',
-  year: '',
-  maxDuration: 30
-});
+  // Aplicar filtros independientemente del término de búsqueda
+  if (filters.value.genre) query.genre = filters.value.genre
+  if (filters.value.yearFrom) query.yearFrom = filters.value.yearFrom
+  if (filters.value.yearTo) query.yearTo = filters.value.yearTo
+  if (filters.value.duration) query.duration = filters.value.duration
 
-const toggleFilters = () => {
-  showFilters.value = !showFilters.value;
-};
-
-const searchDeezer = () => {
-  // Si estamos en la página de inicio, redirigimos
-  if (route.path === '/') {
-    router.push({
-      path: '/search',
-      query: { 
-        q: searchQuery.value,
-        genre: filters.genre,
-        year: filters.year,
-        duration: filters.maxDuration
-      }
-    });
-  } else {
-    // Si ya estamos en la página de búsqueda, actualizamos la query
-    router.replace({ 
-      query: { 
-        q: searchQuery.value,
-        genre: filters.genre,
-        year: filters.year,
-        duration: filters.maxDuration
-      }
-    });
+  // Si no hay ni búsqueda ni filtros, usar un término genérico para mostrar resultados
+  if (Object.keys(query).length === 0) {
+    query.q = 'music' // Término genérico para mostrar resultados
   }
-};
+
+  // Navegar a la página de búsqueda con los parámetros
+  router.push({ 
+    path: '/search', 
+    query: query 
+  })
+  
+  // Cerrar el modal de filtros
+  showFiltersModal.value = false
+}
+
+
+
+const applyFilters = () => {
+  performSearch()
+}
+
+const resetFilters = () => {
+  // Resetear todos los filtros
+  filters.value = {
+    genre: '',
+    yearFrom: '',
+    yearTo: '',
+    duration: ''
+  }
+  
+  // Limpiar también el término de búsqueda
+  searchQuery.value = ''
+  
+  // Realizar búsqueda
+  performSearch()
+}
+
+// Cargar query inicial
+onMounted(() => {
+  // Restaurar filtros de la URL
+  if (route.query.genre) filters.value.genre = route.query.genre
+  if (route.query.yearFrom) filters.value.yearFrom = route.query.yearFrom
+  if (route.query.yearTo) filters.value.yearTo = route.query.yearTo
+  if (route.query.duration) filters.value.duration = route.query.duration
+})
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
+// Colores basados en tu diseño
+$primary-color: #A238FF;
+$background-color: #F5F2F8;
+$text-color: #333;
+$border-color: #E1DDE4;
+
 .search-container {
-  display: flex;
-  align-items: center;
-  border-bottom: 2px solid #E1DDE4;
+  position: relative;
   width: 100%;
+  margin-bottom: 2rem;
 }
 
 .search-wrapper {
-  width: 100%;
-  max-width: 600px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  align-items: center;
+  background-color: $background-color;
+  border-radius: 12px;
+  padding: 1rem;
+  gap: 1rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.search-input-group {
+  flex-grow: 1;
+}
+
+.input-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: $primary-color;
+  z-index: 10;
 }
 
 .search-input {
-  width: 65%;
+  width: 100%;
+  padding: 0.75rem 2.5rem;
+  padding-right: 40px;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $primary-color;
+    box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+  }
+}
+
+.clear-input-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  border-radius: 8px;
-  background-color: #E1DDE4;
-  padding: 0;
+  justify-content: center;
+
+  &:hover {
+    color: $primary-color;
+  }
 }
 
-.search-input input {
-  
-  border: none;
-  outline: none;
-  padding: 10px;
-  font-size: 1.1rem;
-  color: #000000;
-  background-color: #E1DDE4;
-  border-radius: 8px;
-}
-
-.search-input button {
-  border: none;
-  background-color: transparent;
-  padding: 0 10px;
-  cursor: pointer;
-  color: #777;
-  font-size: 20px;
-}
-
-.search-input button:hover {
-  color: #000;
-}
-
-.filter-toggle {
-  border-left: 1px solid #ddd;
-}
-
-.filters-panel {
-  width: 100%;
-  max-height: 0;
-  overflow: hidden;
-  transition: all 0.3s ease-out;
-  background: white;
-  margin-top: 20px;
-  opacity: 0;
-}
-
-.filters-panel.show {
-  max-height: 500px;
-  opacity: 1;
-}
-
-.filter-group {
+.search-actions {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin-top: 10px;
-  background-color: #f8f9fa;
+  align-items: center;
 }
 
-select, input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  background-color: white;
-}
-
-.duration-filter {
+.action-buttons {
   display: flex;
-  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
 }
 
-.duration-filter input {
+.btn-filter {
+  background-color: rgba($primary-color, 0.1);
+  color: $primary-color;
+
+  &:hover {
+    background-color: rgba($primary-color, 0.2);
+  }
+
+  i {
+    font-size: 1.2rem;
+  }
+}
+
+.btn-search {
+  background-color: $primary-color;
+  color: white;
+
+}
+
+// Modal de Filtros
+.filters-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.filters-content {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid $border-color;
+
+  h3 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .close-modal-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 1.2rem;
+
+    &:hover {
+      color: $primary-color;
+    }
+  }
+}
+
+.filters-body {
+  padding: 1rem;
+
+  .filter-group {
+    margin-bottom: 1.5rem;
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: $text-color;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 0.625rem;
+      border: 1px solid $border-color;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+  }
+
+  .year-range {
+    display: flex;
+    gap: 1rem;
+
+    input {
+      flex: 1;
+    }
+  }
+}
+
+.filters-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  border-top: 1px solid $border-color;
+
+  .btn-reset {
+    background-color: rgba($primary-color, 0.1);
+    color: $primary-color;
+
+    &:hover {
+      background-color: rgba($primary-color, 0.2);
+    }
+  }
+
+  .btn-apply {
+    background-color: $primary-color;
+    color: white;
+
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .search-wrapper {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .search-input-group,
+  .search-actions {
+    width: 100%;
+  }
+
+  .action-buttons {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .btn {
+    width: 100%;
+  }
 }
 </style>

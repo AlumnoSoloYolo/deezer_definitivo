@@ -94,22 +94,20 @@ const formatTime = (seconds) => {
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-const togglePlay = async () => {
+const togglePlay = () => {
   if (!audioPlayer.value || !currentSong.value) return;
-  try {
-    if (audioPlayer.value.paused) {
-      await audioPlayer.value.play().catch(error => {
-        console.error('Error reproduciendo audio:', error);
-      });
-      playerStore.isPlaying = true;
-    } else {
-      audioPlayer.value.pause();
-      playerStore.isPlaying = false;
-    }
-  } catch (error) {
-    console.error('Error en reproducción:', error);
-  }
+  playerStore.togglePlay();
 };
+
+watch(() => playerStore.isPlaying, (isPlaying) => {
+  if (isPlaying) {
+    audioPlayer.value.play().catch(error => {
+      console.error('Error reproduciendo audio:', error);
+    });
+  } else {
+    audioPlayer.value.pause();
+  }
+});
 
 watch(currentSong, async (newSong) => {
   if (newSong && audioPlayer.value) {
@@ -117,7 +115,7 @@ watch(currentSong, async (newSong) => {
       audioPlayer.value.src = newSong.preview;
       await audioPlayer.value.load();
       if (playerStore.isPlaying) {
-        await audioPlayer.value.play();
+        audioPlayer.value.play();
       }
     } catch (error) {
       console.error('Error loading audio:', error);
@@ -164,6 +162,7 @@ const handleEnded = () => {
 .music-player{
   border-top: 2px solid #E1DDE4;
   background-color: #F5F2F8;
+  height: 80px;
 }
 
 
@@ -172,8 +171,8 @@ const handleEnded = () => {
 }
 
 .play-button {
-  width: 40px;
-  height: 40px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   background-color: #A238FF;
   display: flex;

@@ -2,6 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue';
 import PlaylistsView from '../views/PlaylistsView.vue';
 import SearchView from '../views/SearchView.vue';
+import InfoPlaylist from '@/components/InfoPlaylist.vue';
+import InfoAlbum from '@/components/InfoAlbum.vue';
+import InfoArtist from '@/components/InfoArtist.vue';
 
 const routes = [
   {
@@ -25,18 +28,19 @@ const routes = [
     component: () => import('../views/InfoView.vue')
   },
   {
+    path: '/playlist/:id',
+    name: 'playlist-info',
+    component: InfoPlaylist
+  },
+  {
     path: '/album/:id',
-    component: () => import('@/components/InfoAlbum.vue'),
-    children: [
-      {
-        path: 'track/:trackId',
-        component: () => import('@/components/InfoSong.vue'),
-      },
-      {
-        path: 'artist/:artistId',
-        component: () => import('@/components/InfoArtist.vue'),
-      }
-    ]
+    name: 'album-info',
+    component: InfoAlbum
+  },
+  {
+    path: '/artist/:id',
+    name: 'artist-info',
+    component: InfoArtist
   }
 ];
 

@@ -1,47 +1,102 @@
+<!-- SearchPage.vue -->
 <template>
   <div class="search-page">
     <SearchBar :initialQuery="$route.query.q || ''" />
     
-    <div class="results-container">
+    <!-- Sección de búsqueda si hay query -->
+    <div v-if="$route.query.q || $route.query.genre" class="results-container">
       <div v-if="loading" class="loading">
         <p>Buscando...</p>
       </div>
       
-      <div v-else-if="results.length > 0" class="results-grid">
-        
-        <div v-for="item in results" 
-             :key="item.id" 
-             class="result-card">
-          <img :src="item.album?.cover_medium" :alt="item.title">
-          <div class="item-info">
-            <h3>{{ item.title }}</h3>
-            <p class="artist">
-              <router-link :to="`/artist/${item.artist.id}`">
-                {{ item.artist?.name }}
+      <div v-else-if="results.length > 0" class="results-list">
+        <div class="songs-header">
+          <div class="header-row">
+            <div class="header-cell">#</div>
+            <div class="header-cell">Título</div>
+            <div class="header-cell">Artista</div>
+            <div class="header-cell text-right">
+              <i class="bi bi-clock"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="songs-body">
+          <div 
+            v-for="(item, index) in results" 
+            :key="item.id"
+            class="song-row"
+            :class="{ 
+              'playing': playerStore.currentSong?.id === item.id && playerStore.isPlaying,
+              'not-readable': !item.readable 
+            }"
+            @dblclick="item.readable && togglePlay(item)"
+          >
+            <div class="number">
+              <span class="index">{{ index + 1 }}</span>
+              <button 
+                v-if="item.readable" 
+                class="play-btn"
+                @click.stop="togglePlay(item)"
+                :class="{ 'is-playing': playerStore.currentSong?.id === item.id && playerStore.isPlaying }"
+              >
+                <i :class="[
+                  'bi',
+                  playerStore.currentSong?.id === item.id && playerStore.isPlaying 
+                    ? 'bi-pause-fill' 
+                    : 'bi-play-fill'
+                ]"></i>
+              </button>
+            </div>
+            <div class="title">
+              <img 
+                v-if="item.album && item.album.cover_small" 
+                :src="item.album.cover_small" 
+                :alt="item.title" 
+                class="song-album-image"
+              >
+              <div class="song-info">
+                <span :class="{ 'text-muted': !item.readable }">
+                  {{ item.title }}
+                </span>
+                <span v-if="item.explicit_lyrics" class="explicit-badge">E</span>
+              </div>
+            </div>
+            <div class="artist">
+              <router-link 
+                v-if="item.artist" 
+                :to="`/artist/${item.artist.id}`"
+              >
+                {{ item.artist.name }}
               </router-link>
-            </p>
-            <p class="album">
-              <router-link :to="`/album/${item.album.id}`">
-                {{ item.album?.title }}
-              </router-link>
-            </p>
-            <div class="details">
-              <span class="duration">{{ formatDuration(item.duration) }}</span>
-              <div class="actions">
+            </div>
+            <div class="actions">
+              <div class="song-actions">
                 <button 
-                  class="favorite-button" 
-                  @click.stop="handleFavorite(item)"
+                  v-if="item.readable" 
+                  class="action-btn play"
+                  @click.stop="togglePlay(item)"
+                >
+                  <i :class="[
+                    'bi',
+                    {
+                      'bi-pause-fill': playerStore.currentSong?.id === item.id && playerStore.isPlaying,
+                      'bi-play-fill': playerStore.currentSong?.id !== item.id || !playerStore.isPlaying
+                    }
+                  ]"></i>
+                </button>
+                <button 
+                  class="action-btn favorite"
+                  @click="handleFavorite(item)"
                   :class="{ 'is-favorite': favoritesStore.isFavorite(item.id) }"
                 >
-                  <i class="bi" :class="favoritesStore.isFavorite(item.id) ? 'bi-heart-fill' : 'bi-heart'"></i>
+                  <i :class="favoritesStore.isFavorite(item.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
                 </button>
-                <button class="play-button" @click.stop="playSong(item)">
-                  <i class="bi bi-play-fill"></i>
-                </button>
-                <button class="add-queue-button" @click.stop="addToQueue(item)">
+                <button class="action-btn" @click="addToQueue(item)">
                   <i class="bi bi-plus"></i>
                 </button>
               </div>
+              <span class="duration">{{ formatDuration(item.duration) }}</span>
             </div>
           </div>
         </div>
@@ -51,99 +106,235 @@
         <p>No se encontraron resultados</p>
       </div>
     </div>
+
+    <!-- Contenido de descubrimiento -->
+    <div v-else class="discover-sections">
+
+
+        <!-- Géneros Musicales -->
+        <section class="featured-section">
+        <h2 class="section-title">Explorar Género</h2>
+        <div class="genres-grid">
+          <div v-for="genre in genres" 
+               :key="genre.id"
+               class="genre-card"
+               @click="searchByGenre(genre.id)">
+            <img :src="genre.picture_medium" :alt="genre.name">
+            <div class="genre-overlay">
+              <h3>{{ genre.name }}</h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Playlists Destacadas -->
+      <section class="featured-section">
+        <h2 class="section-title">Playlists Destacadas</h2>
+        <div class="playlists-grid">
+          <div v-for="playlist in playlists" 
+               :key="playlist.id"
+               class="playlist-card"
+               @click="navigateToPlaylist(playlist.id)">
+            <img :src="playlist.picture_medium" :alt="playlist.title">
+            <div class="playlist-info">
+              <h3>{{ playlist.title }}</h3>
+              <p>{{ playlist.nb_tracks }} canciones</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Últimos Álbumes -->
+      <section class="featured-section">
+        <h2 class="section-title">Últimos Lanzamientos</h2>
+        <div class="albums-grid">
+          <div v-for="album in latestAlbums" 
+               :key="album.id"
+               class="album-card"
+               @click="navigateToAlbum(album.id)">
+            <img :src="album.cover_medium" :alt="album.title">
+            <div class="album-info">
+              <h3>{{ album.title }}</h3>
+              <p>{{ album.artist.name }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { usePlayerStore } from '../stores/player';
 import { useFavoritesStore } from '../stores/favorites';
 import SearchBar from '../components/SearchBar.vue';
 
+// Stores y router
 const route = useRoute();
+const router = useRouter();
 const playerStore = usePlayerStore();
 const favoritesStore = useFavoritesStore();
+
+// Estados
 const loading = ref(false);
 const results = ref([]);
 const hasSearched = ref(false);
+const playlists = ref([]);
+const latestAlbums = ref([]);
+const genres = ref([]);
 
-const fetchResults = async (query, filters) => {
-  loading.value = true;
-  hasSearched.value = true;
-
-  try {
-    let baseQuery = '';
-    
-    if (query?.trim()) {
-      baseQuery = query.trim();
-    }
-    
-    if (filters.genre) {
-      baseQuery = baseQuery ? `${baseQuery} genre:"${filters.genre}"` : `genre:"${filters.genre}"`;
-    }
-    
-    if (!baseQuery) {
-      baseQuery = 'a';
-    }
-
-    const url = `http://localhost:8080/https://api.deezer.com/search?q=${encodeURIComponent(baseQuery)}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    let filtered = data.data || [];
-
-    if (filters.year) {
-      filtered = filtered.filter(item => {
-        if (!item.album?.release_date) return false;
-        const year = new Date(item.album.release_date).getFullYear();
-        
-        switch (filters.year) {
-          case 'older':
-            return year < 1960;
-          case '2020':
-            return year >= 2020;
-          case '2010':
-            return year >= 2010 && year < 2020;
-          case '2000':
-            return year >= 2000 && year < 2010;
-          case '1990':
-            return year >= 1990 && year < 2000;
-          case '1980':
-            return year >= 1980 && year < 1990;
-          case '1970':
-            return year >= 1970 && year < 1980;
-          case '1960':
-            return year >= 1960 && year < 1970;
-          default:
-            return true;
-        }
-      });
-    }
-
-    if (filters.duration) {
-      const maxDurationSeconds = filters.duration * 60;
-      filtered = filtered.filter(item => item.duration <= maxDurationSeconds);
-    }
-
-    results.value = filtered;
-  } catch (error) {
-    console.error('Error:', error);
-    results.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
-
+// Funciones de utilidad
 const formatDuration = (seconds) => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
-const playSong = (song) => {
-  playerStore.playSong(song);
+// En SearchView.vue, actualiza la función fetchResults
+
+const fetchResults = async (query, filters) => {
+  loading.value = true;
+  hasSearched.value = true;
+  results.value = [];
+
+  try {
+    let baseUrl = 'http://localhost:8080/https://api.deezer.com/search';
+    let searchQuery = query?.trim() || '';
+
+    // Construir la consulta de búsqueda
+    if (filters?.genre) {
+      // Si hay un género, añadirlo a la búsqueda
+      searchQuery += searchQuery ? ` genre:"${filters.genre}"` : `genre:"${filters.genre}"`;
+    }
+
+    // Si no hay búsqueda ni género, usar un término por defecto
+    if (!searchQuery) {
+      searchQuery = 'a';
+    }
+
+    const urlParams = new URLSearchParams();
+    urlParams.append('q', searchQuery);
+
+    const url = `${baseUrl}?${urlParams.toString()}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data || !data.data) {
+      throw new Error('No se encontraron datos');
+    }
+
+    let filtered = data.data;
+
+    // Aplicar filtros adicionales
+    if (filters) {
+      if (filters.duration) {
+        const maxDurationSeconds = parseInt(filters.duration) * 60;
+        filtered = filtered.filter(item => item.duration <= maxDurationSeconds);
+      }
+
+      if (filters.yearFrom || filters.yearTo) {
+        filtered = filtered.filter(item => {
+          if (!item.album?.release_date) return true;
+          const year = new Date(item.album.release_date).getFullYear();
+          return (!filters.yearFrom || year >= filters.yearFrom) && 
+                 (!filters.yearTo || year <= filters.yearTo);
+        });
+      }
+    }
+
+    results.value = filtered;
+  } catch (error) {
+    console.error('Error en la búsqueda:', error);
+    results.value = [];
+  } finally {
+    loading.value = false;
+  }
 };
+
+// También actualizar searchByGenre
+const searchByGenre = async (genreId) => {
+  try {
+    // Primero obtenemos el nombre del género
+    const genre = genres.value.find(g => g.id === genreId);
+    
+    if (genre) {
+      router.push({
+        path: '/search',
+        query: { 
+          genre: genreId,
+          genreName: genre.name
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error al buscar por género:', error);
+  }
+};
+
+// Funciones de carga de datos de descubrimiento
+const fetchPlaylists = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/https://api.deezer.com/editorial/0/charts');
+    const data = await response.json();
+    playlists.value = data.playlists.data.slice(0, 8);
+  } catch (error) {
+    console.error('Error fetching playlists:', error);
+  }
+};
+
+const fetchLatestAlbums = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/https://api.deezer.com/chart/0/albums');
+    const data = await response.json();
+    latestAlbums.value = data.data.slice(0, 8);
+  } catch (error) {
+    console.error('Error fetching albums:', error);
+  }
+};
+
+const fetchGenres = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/https://api.deezer.com/genre');
+    const data = await response.json();
+    genres.value = data.data.filter(genre => genre.id !== 0).slice(0, 8);
+  } catch (error) {
+    console.error('Error fetching genres:', error);
+  }
+};
+
+
+// Añadir una función para limpiar filtros
+const clearFilters = () => {
+  router.push({
+    path: '/search',
+    query: {}
+  });
+};
+
+// Resto de las funciones (togglePlay, addToQueue, etc.) permanecen igual
+const togglePlay = (song) => {
+  if (!song.readable) return
+
+  // Si es la misma canción que está sonando, solo alternamos play/pause
+  if (playerStore.currentSong?.id === song.id) {
+    playerStore.togglePlay()
+    return
+  }
+
+  // Si es una nueva canción
+  const allTracks = results.value
+  const currentIndex = allTracks.findIndex(track => track.id === song.id)
+  const nextSongs = allTracks.slice(currentIndex + 1).filter(track => track.readable)
+
+  // Iniciamos la reproducción y configuramos la cola
+  playerStore.playSong(song)
+  playerStore.clearQueue()
+  playerStore.setQueue(nextSongs)
+}
 
 const addToQueue = (song) => {
   playerStore.addToQueue(song);
@@ -157,211 +348,312 @@ const handleFavorite = (song) => {
   }
 };
 
+// Funciones de navegación
+const navigateToPlaylist = (id) => {
+  router.push(`/playlist/${id}`);
+};
+
+const navigateToAlbum = (id) => {
+  router.push(`/album/${id}`);
+};
+
+
+onMounted(() => {
+  // Siempre cargar las secciones de descubrimiento
+  fetchPlaylists();
+  fetchLatestAlbums();
+  fetchGenres();
+
+  // Si hay query o género, realizar búsqueda
+  if (route.query.q || route.query.genre) {
+    const filters = {
+      genre: route.query.genre,
+      yearFrom: route.query.yearFrom ? parseInt(route.query.yearFrom) : null,
+      yearTo: route.query.yearTo ? parseInt(route.query.yearTo) : null,
+      duration: route.query.duration ? parseInt(route.query.duration) : null
+    };
+    fetchResults(route.query.q, filters);
+  }
+});
+
+// Añadir un watch para la ruta
+// Actualizar el watch en SearchView.vue
 watch(
   () => route.query,
   (newQuery) => {
-    fetchResults(newQuery.q, {
+    const filters = {
       genre: newQuery.genre,
-      year: newQuery.year,
-      duration: newQuery.duration
-    });
+      yearFrom: newQuery.yearFrom ? parseInt(newQuery.yearFrom) : null,
+      yearTo: newQuery.yearTo ? parseInt(newQuery.yearTo) : null,
+      duration: newQuery.duration ? parseInt(newQuery.duration) : null
+    };
+    fetchResults(newQuery.q, filters);
   },
-  { immediate: true, deep: true }
+  { immediate: true }
 );
 </script>
 
-<style scoped>
 
-.results-container {
-  max-width: 1200px;
-  margin: 20px auto;
+<style scoped lang="scss">
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .song-album-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  .song-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+.discover-sections {
+  padding: 2rem;
 }
 
-.results-grid {
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.featured-section {
+  margin-bottom: 3rem;
+}
+
+.playlists-grid,
+.albums-grid,
+.genres-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
 }
 
-.result-card {
-  background: white;
+.playlist-card,
+.album-card,
+.genre-card {
+  position: relative;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-5px);
+  }
+
+  img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+}
+
+.playlist-info,
+.album-info {
+  padding: 1rem;
+  background: white;
+
+  h3 {
+    font-size: 1rem;
+    margin: 0;
+    font-weight: 600;
+    color: #333;
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0.5rem 0 0;
+  }
+}
+
+.genre-card {
   position: relative;
-}
 
-.result-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.result-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.item-info {
-  padding: 15px;
-  transition: background-color 0.2s;
-}
-
-.result-card:hover .item-info {
-  background-color: #f8f9fa;
-}
-
-.item-info h3 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin-bottom: 5px;
-}
-
-.artist a, .album a {
-  text-decoration: none;
-  color: inherit;
-  transition: color 0.2s;
-}
-
-.artist a:hover {
-  color: #007bff;
-}
-
-.album a:hover {
-  color: #0056b3;
-}
-
-.artist {
-  color: #666;
-  margin: 5px 0;
-}
-
-.album {
-  color: #888;
-  font-size: 0.9rem;
-  margin: 5px 0;
-}
-
-.details {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-}
-
-.play-button, .add-queue-button {
-  background: #007bff;
-  color: white;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: transform 0.2s, background-color 0.2s;
-}
-
-.add-queue-button {
-  background: #6c757d;
-}
-
-.play-button:hover, .add-queue-button:hover {
-  transform: scale(1.1);
-}
-
-.play-button:hover {
-  background: #0056b3;
-}
-
-.add-queue-button:hover {
-  background: #5a6268;
-}
-
-.duration {
-  font-size: 0.8rem;
-  color: #999;
-}
-
-.loading, .no-results {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-}
-
-@media (max-width: 768px) {
-  .results-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
+  .genre-overlay {
     position: absolute;
-    right: 10px;
-    bottom: 10px;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    display: flex;
+    align-items: flex-end;
+    padding: 1rem;
+
+    h3 {
+      color: white;
+      margin: 0;
+      font-size: 1.2rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
   }
-  
-  .duration {
-    font-size: 0.7rem;
+}
+
+// Media queries para responsividad
+@media (max-width: 768px) {
+  .discover-sections {
+    padding: 1rem;
+  }
+
+  .playlists-grid,
+  .albums-grid,
+  .genres-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
   }
 }
 
+.results-list {
+  margin-top: 2rem;
 
-.favorite-button {
-  background: transparent;
-  color: #dc3545;
-  border: 2px solid #dc3545;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+  .songs-header {
+    color: #666;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid #E1DDE4;
+    
+    .header-row {
+      display: grid;
+      grid-template-columns: 50px 3fr 2fr 120px;
+      align-items: center;
+      padding: 0.8rem;
+    }
+  }
 
-.favorite-button:hover {
-  transform: scale(1.1);
-  background: #dc3545;
-  color: white;
-}
+  .song-row {
+    display: grid;
+    grid-template-columns: 50px 3fr 2fr 120px;
+    align-items: center;
+    padding: 0.8rem;
+    border-radius: 8px;
+    transition: all 0.2s;
 
-.favorite-button.is-favorite {
-  background: #dc3545;
-  color: white;
-}
+    &:hover {
+      background-color: #F5F2F8;
 
-.favorite-button.is-favorite:hover {
-  background: #c82333;
-  border-color: #c82333;
-}
+      .song-actions {
+        opacity: 1;
+      }
 
-@keyframes heartBeat {
-  0% { transform: scale(1); }
-  14% { transform: scale(1.3); }
-  28% { transform: scale(1); }
-  42% { transform: scale(1.3); }
-  70% { transform: scale(1); }
-}
+      .index {
+        display: none;
+      }
 
-.favorite-button.is-favorite i {
-  animation: heartBeat 1s;
-}
+      .play-btn {
+        display: flex;
+      }
+    }
 
-/* Actualiza los estilos de actions para incluir el nuevo botón */
-.actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+    &.playing {
+      background-color: #F5F2F8;
+    }
+
+    &.not-readable {
+      opacity: 0.5;
+    }
+
+    .number {
+      position: relative;
+      width: 40px;
+
+      .index {
+        display: block;
+      }
+
+      .play-btn {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #A238FF;
+        font-size: 1.2rem;
+      }
+    }
+
+    .title {
+      .song-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .explicit-badge {
+        background-color: #666;
+        color: white;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        font-size: 0.8rem;
+      }
+    }
+
+    .artist {
+      a {
+        color: inherit;
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    .song-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+
+      .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          background-color: #EBE7EE;
+        }
+
+        &.favorite {
+          &.is-favorite i {
+            color: #E85E38;
+          }
+        }
+
+        i {
+          font-size: 1.2rem;
+          color: #A238FF;
+        }
+      }
+    }
+
+    .duration {
+      color: #666;
+    }
+  }
 }
 </style>
