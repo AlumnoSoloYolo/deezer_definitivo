@@ -150,7 +150,7 @@ body, html {
 
 .subscribe-banner {
   width: 90%;
-  margin-left: 0.5rem;
+  margin-left: 0.7rem;
   background-color: $primary-color;
   color: white;
   padding: 16px;
