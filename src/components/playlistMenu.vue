@@ -117,16 +117,14 @@ const handleLogout = () => {
   window.location.reload()
 }
 
-// Manejo de tecla Escape
 const handleEscape = (e) => {
   if (e.key === 'Escape' && showLogoutModal.value) {
     closeModal()
   }
 }
 
-// Lifecycle hooks
 onMounted(() => {
-  // Cargar datos del usuario
+  // Cargamos datos del usuario
   const storedUser = localStorage.getItem('user')
   if (storedUser) {
     try {
@@ -136,7 +134,7 @@ onMounted(() => {
     }
   }
   
-  // Añadir event listener para Escape
+  // Añadimos event listener para Escape
   window.addEventListener('keydown', handleEscape)
 })
 
@@ -205,13 +203,14 @@ $primary-color: #A238FF;
   justify-content: center;
   align-items: center;
   transition: all 0.3s ease;
-  border-radius: 10px;
+  border-radius: 5px;
 
   &.heart {
     background-color: #FFD0C3;
     i {
+
       color: #E85E38;
-      font-size: 1.5rem;
+      font-size: 1.7rem;
     }
   }
 
@@ -371,7 +370,7 @@ $primary-color: #A238FF;
     transition: background-color 0.2s;
 
     &:hover {
-      background-color: darken(#dc3545, 10%);
+      background-color: #ce2b3b;
     }
 
     i {

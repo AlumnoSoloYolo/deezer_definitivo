@@ -9,10 +9,10 @@
         <Menu :is-collapsed="isCollapsed" />
 
         <div class="subscribe-banner" :class="{ 'collapsed': isCollapsed }">
-          <template v-if="!isCollapsed">
+          <div v-if="!isCollapsed">
             <span>Suscríbete y sáltate gratis los anuncios durante 1 mes.</span>
-            <button>Probar ahora</button>
-          </template>
+            <button><a  href="https://www.deezer.com/es/offers?origin=CONVERSION_BANNER">Probar ahora</a></button>
+          </div>
           <i v-else class="bi bi-gem"></i>
         </div>
 
@@ -156,6 +156,11 @@ body, html {
   padding: 16px;
   border-radius: 5px;
   transition: all $transition-speed ease;
+
+  a{
+    text-decoration: none;
+    color: white
+  }
   ;
   
   &.collapsed {

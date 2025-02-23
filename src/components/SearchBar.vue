@@ -8,7 +8,7 @@
           <input 
             type="text" 
             v-model="searchQuery" 
-            @keyup.enter="performSearch"
+            @keyup.enter="handleSearch"
             placeholder="Canciones, artistas, álbumes, playlists..." 
             class="search-input"
           >
@@ -25,7 +25,7 @@
       <div class="search-actions">
         <div class="action-buttons">
           <button 
-            class="btn btn-filter" 
+            class="btn btn--filter" 
             @click="toggleFiltersModal"
           >
             <i class="bi bi-sliders"></i>
@@ -33,8 +33,8 @@
           </button>
           
           <button 
-            class="btn btn-search" 
-            @click="performSearch"
+            class="btn btn--search" 
+            @click="handleSearch"
           >
             <i class="bi bi-search"></i>
             Buscar
@@ -98,23 +98,23 @@
             <label>Duración máxima</label>
             <select v-model="filters.duration">
               <option value="">Sin límite</option>
-              <option value="2">2 minutos</option>
-              <option value="3">3 minutos</option>
-              <option value="5">5 minutos</option>
-              <option value="10">10 minutos</option>
+              <option :value="120">2 minutos</option>
+              <option :value="180">3 minutos</option>
+              <option :value="300">5 minutos</option>
+              <option :value="600">10 minutos</option>
             </select>
           </div>
         </div>
 
         <div class="filters-footer">
           <button 
-            class="btn btn-reset" 
+            class="btn btn--secondary" 
             @click="resetFilters"
           >
             Restablecer
           </button>
           <button 
-            class="btn btn-apply" 
+            class="btn btn--primary" 
             @click="applyFilters"
           >
             Aplicar
@@ -126,14 +126,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
+// Props
+const props = defineProps({
+  initialQuery: {
+    type: String,
+    default: ''
+  }
+})
 
 const route = useRoute()
 const router = useRouter()
 
 // Estados
-const searchQuery = ref(route.query.q || '')
+const searchQuery = ref(props.initialQuery)
 const showFiltersModal = ref(false)
 const currentYear = new Date().getFullYear()
 
@@ -145,14 +153,38 @@ const filters = ref({
   duration: route.query.duration || ''
 })
 
-// Géneros (simular datos de tu API)
+// Géneros hardcodeados (como en tu código original)
 const availableGenres = ref([
   { id: 132, name: 'Hip Hop' },
   { id: 116, name: 'Rock' },
   { id: 129, name: 'Pop' },
   { id: 152, name: 'Electrónica' },
-  // Añade más géneros
 ])
+
+
+// En el script setup del SearchBar.vue
+const fetchGenres = async () => {
+  try {
+    const response = await fetch('http://localhost:8080/https://api.deezer.com/genre');
+    const data = await response.json();
+    if (data && data.data) {
+      availableGenres.value = data.data.filter(genre => genre.id !== 0);
+    }
+  } catch (error) {
+    console.error('Error al cargar géneros:', error);
+  }
+};
+
+// Cargar géneros al montar el componente
+onMounted(async () => {
+  await fetchGenres();
+  
+  // Restaurar filtros de la URL
+  if (route.query.genre) filters.value.genre = route.query.genre;
+  if (route.query.yearFrom) filters.value.yearFrom = route.query.yearFrom;
+  if (route.query.yearTo) filters.value.yearTo = route.query.yearTo;
+  if (route.query.duration) filters.value.duration = route.query.duration;
+});
 
 // Métodos
 const toggleFiltersModal = () => {
@@ -163,43 +195,39 @@ const clearSearch = () => {
   searchQuery.value = ''
 }
 
-const performSearch = () => {
+const buildSearchParams = () => {
   const query = {}
   
   // Añadir término de búsqueda si existe
-  if (searchQuery.value) {
-    query.q = searchQuery.value
+  if (searchQuery.value?.trim()) {
+    query.q = searchQuery.value.trim()
   }
 
-  // Aplicar filtros independientemente del término de búsqueda
+  // Añadir filtros si tienen valor
   if (filters.value.genre) query.genre = filters.value.genre
   if (filters.value.yearFrom) query.yearFrom = filters.value.yearFrom
   if (filters.value.yearTo) query.yearTo = filters.value.yearTo
   if (filters.value.duration) query.duration = filters.value.duration
 
-  // Si no hay ni búsqueda ni filtros, usar un término genérico para mostrar resultados
-  if (Object.keys(query).length === 0) {
-    query.q = 'music' // Término genérico para mostrar resultados
-  }
+  return query
+}
 
-  // Navegar a la página de búsqueda con los parámetros
+const handleSearch = () => {
+  const query = buildSearchParams()
+  
   router.push({ 
     path: '/search', 
-    query: query 
+    query 
   })
   
-  // Cerrar el modal de filtros
   showFiltersModal.value = false
 }
 
-
-
 const applyFilters = () => {
-  performSearch()
+  handleSearch()
 }
 
 const resetFilters = () => {
-  // Resetear todos los filtros
   filters.value = {
     genre: '',
     yearFrom: '',
@@ -207,14 +235,11 @@ const resetFilters = () => {
     duration: ''
   }
   
-  // Limpiar también el término de búsqueda
   searchQuery.value = ''
-  
-  // Realizar búsqueda
-  performSearch()
+  handleSearch()
 }
 
-// Cargar query inicial
+// Cargo aquí los datos iniciales
 onMounted(() => {
   // Restaurar filtros de la URL
   if (route.query.genre) filters.value.genre = route.query.genre
@@ -225,26 +250,61 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-// Colores basados en tu diseño
-$primary-color: #A238FF;
-$background-color: #F5F2F8;
-$text-color: #333;
-$border-color: #E1DDE4;
+// Variables
+$color-primary: #A238FF;
+$color-background: #F5F2F8;
+$color-text: #333;
+$color-border: #E1DDE4;
+$spacing-base: 1rem;
+$border-radius: 8px;
 
+// Mixins
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-base * 0.5;
+  padding: $spacing-base * 0.625 $spacing-base;
+  border-radius: $border-radius;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+
+.close-modal-btn{
+  border-radius: 2px;
+  background-color: tomato;
+  border: 0;
+  color: white;
+}
+
+.close-modal-btn:hover{
+  transform: scale(1.05);
+  background-color: rgb(254, 108, 82);
+}
+
+// Componente
 .search-container {
   position: relative;
   width: 100%;
-  margin-bottom: 2rem;
+  margin-bottom: $spacing-base * 2;
 }
 
 .search-wrapper {
   display: flex;
   align-items: center;
-  background-color: $background-color;
-  border-radius: 12px;
-  padding: 1rem;
-  gap: 1rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  background-color: $color-background;
+  border-radius: $border-radius * 1.5;
+  padding: $spacing-base;
+  gap: $spacing-base;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .search-input-group {
@@ -255,165 +315,135 @@ $border-color: #E1DDE4;
   position: relative;
   display: flex;
   align-items: center;
-}
 
-.search-icon {
-  position: absolute;
-  left: 12px;
-  color: $primary-color;
-  z-index: 10;
+  .search-icon {
+    position: absolute;
+    left: $spacing-base * 0.75;
+    color: $color-primary;
+    z-index: 10;
+  }
 }
 
 .search-input {
   width: 100%;
-  padding: 0.75rem 2.5rem;
-  padding-right: 40px;
-  border: 1px solid $border-color;
-  border-radius: 8px;
-  background-color: white;
+  padding: $spacing-base * 0.75 ($spacing-base * 2.5);
+  border: 1px solid $color-border;
+  border-radius: $border-radius;
   font-size: 1rem;
   transition: all 0.3s ease;
 
   &:focus {
     outline: none;
-    border-color: $primary-color;
-    box-shadow: 0 0 0 2px rgba($primary-color, 0.2);
+    border-color: $color-primary;
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
   }
 }
 
 .clear-input-btn {
   position: absolute;
-  right: 10px;
+  right: $spacing-base * 0.625;
   background: none;
   border: none;
   color: #888;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include flex-center;
 
   &:hover {
-    color: $primary-color;
+    color: $color-primary;
   }
-}
-
-.search-actions {
-  display: flex;
-  align-items: center;
 }
 
 .action-buttons {
   display: flex;
-  gap: 0.75rem;
+  gap: $spacing-base * 0.75;
 }
 
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border: none;
-}
+  @include button-base;
 
-.btn-filter {
-  background-color: rgba($primary-color, 0.1);
-  color: $primary-color;
+  &--filter {
+    background-color: rgba($color-primary, 0.1);
+    color: $color-primary;
 
-  &:hover {
-    background-color: rgba($primary-color, 0.2);
+    &:hover {
+      background-color: rgba($color-primary, 0.2);
+    }
   }
 
-  i {
-    font-size: 1.2rem;
+  &--search {
+    background-color: $color-primary;
+    color: white;
+  }
+
+  &--secondary {
+    @extend .btn--filter;
+  }
+
+  &--primary {
+    @extend .btn--search;
   }
 }
 
-.btn-search {
-  background-color: $primary-color;
-  color: white;
-
-}
-
-// Modal de Filtros
 .filters-modal {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  @include flex-center;
   z-index: 1000;
-  padding: 1rem;
+  padding: $spacing-base;
 }
 
 .filters-content {
   background: white;
-  border-radius: 12px;
+  border-radius: $border-radius * 1.5;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
 .filters-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  border-bottom: 1px solid $border-color;
+  padding: $spacing-base;
+  border-bottom: 1px solid $color-border;
 
   h3 {
     margin: 0;
     font-size: 1.2rem;
   }
-
-  .close-modal-btn {
-    background: none;
-    border: none;
-    color: #666;
-    cursor: pointer;
-    font-size: 1.2rem;
-
-    &:hover {
-      color: $primary-color;
-    }
-  }
 }
 
 .filters-body {
-  padding: 1rem;
+  padding: $spacing-base;
 
   .filter-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: $spacing-base * 1.5;
 
     label {
       display: block;
-      margin-bottom: 0.5rem;
+      margin-bottom: $spacing-base * 0.5;
       font-weight: 600;
-      color: $text-color;
+      color: $color-text;
     }
 
-    select, input {
+    select,
+    input {
       width: 100%;
-      padding: 0.625rem;
-      border: 1px solid $border-color;
-      border-radius: 8px;
+      padding: $spacing-base * 0.625;
+      border: 1px solid $color-border;
+      border-radius: $border-radius;
       font-size: 1rem;
     }
   }
 
   .year-range {
     display: flex;
-    gap: 1rem;
+    gap: $spacing-base;
 
     input {
       flex: 1;
@@ -424,30 +454,14 @@ $border-color: #E1DDE4;
 .filters-footer {
   display: flex;
   justify-content: space-between;
-  padding: 1rem;
-  border-top: 1px solid $border-color;
-
-  .btn-reset {
-    background-color: rgba($primary-color, 0.1);
-    color: $primary-color;
-
-    &:hover {
-      background-color: rgba($primary-color, 0.2);
-    }
-  }
-
-  .btn-apply {
-    background-color: $primary-color;
-    color: white;
-
-  }
+  padding: $spacing-base;
+  border-top: 1px solid $color-border;
 }
 
 // Responsive
 @media (max-width: 768px) {
   .search-wrapper {
     flex-direction: column;
-    gap: 1rem;
   }
 
   .search-input-group,

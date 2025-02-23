@@ -1,4 +1,4 @@
-# src/components/UserModal.vue
+
 <template>
   <div class="modal-container" v-if="showModal">
     <header class="header-container">
@@ -26,7 +26,6 @@
         </button>
       </div>
       
-      <!-- Menú móvil hamburguesa -->
       <div class="mobile-menu-toggle" @click="toggleMobileMenu">
         <span></span>
         <span></span>
@@ -73,7 +72,7 @@
       </div>
     </div>
 
-    <!-- Menú móvil desplegable -->
+   
     <div :class="['mobile-menu', { 'is-active': isMobileMenuOpen }]">
       <button
         v-for="item in navItems"
@@ -132,7 +131,8 @@ const handleMobileNavClick = (item) => {
 };
 
 onMounted(() => {
-  // Verificar si ya existe un usuario en localStorage y tiene una marca de primera vez
+
+  // Verificamos si ya existe un usuario en localStorage y tiene una marca de primera vez
   const existingUser = localStorage.getItem('user');
   const firstTimeUser = localStorage.getItem('firstTimeUser');
   
@@ -148,19 +148,19 @@ const saveUser = () => {
       avatarId: selectedAvatar.value
     }
     
-    // Guardar datos de usuario
+    // Guardamos datos de usuario
     localStorage.setItem('user', JSON.stringify(userData));
     
-    // Marcar que ya no es la primera vez
+    // Marcamos que ya no es la primera vez
     localStorage.setItem('firstTimeUser', 'false');
     
-    // Recargar la página
+    // Recargamos la página
     window.location.reload();
   }
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 
 .header-container {
   background: #0F0D13;

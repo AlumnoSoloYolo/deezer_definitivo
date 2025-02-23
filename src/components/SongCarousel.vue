@@ -28,9 +28,15 @@
           :key="song.id"
           :class="['carousel-item', index === 0 ? 'active' : '']"
         >
+         
           <div class="carousel-content">
             <div class="image-container">
-              <img :src="song.album.cover_big" :alt="song.title" class="album-cover">
+              <router-link 
+                    :to="`/song/${song.id}`" 
+                    class="song-title-link"
+                  >
+                  <img :src="song.album.cover_big" :alt="song.title" class="album-cover">
+                  </router-link>
               <div class="album-cover-overlay"></div>
             </div>
             <div class="song-info">
@@ -44,6 +50,7 @@
               <button class="play-button" @click="playSong(song)">
                 <i class="bi bi-play-fill"></i> Reproducir
               </button>
+              
             </div>
           </div>
         </div>
@@ -76,9 +83,9 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { usePlayerStore } from '../stores/player';
 import Carousel from 'bootstrap/js/dist/carousel';
-import AnimatedMountains from './AnimatedMountains.vue';
 import AnimatedMountainsCarousel from './AnimatedMountainsCarousel.vue';
-
+import { useFavoritesStore } from '../stores/favorites';
+const favoritesStore = useFavoritesStore();
 const songs = ref([]);
 const playerStore = usePlayerStore();
 const carouselRef = ref(null);
@@ -88,16 +95,24 @@ const playSong = (song) => {
   playerStore.playSong(song);
 };
 
+const handleFavorite = (song) => {
+  if (favoritesStore.isFavorite(song.id)) {
+    favoritesStore.removeSong(song.id);
+  } else {
+    favoritesStore.addSong(song);
+  }
+};
+
 onMounted(async () => {
   try {
     const response = await fetch('http://localhost:8080/https://api.deezer.com/chart');
     const data = await response.json();
     songs.value = data.tracks.data.slice(0, 5);
 
-    // Esperar un momento para asegurar que el DOM esté listo
+    // Esperar a que el dom esté listo
     setTimeout(() => {
       if (carouselRef.value) {
-        // Inicializar el carousel
+        // Inicializamos el carousel
         carouselInstance = new Carousel(carouselRef.value, {
           interval: 5000,
           ride: true,
@@ -210,6 +225,42 @@ onUnmounted(() => {
   &.active {
     opacity: 1;
     z-index: 2;
+  }
+}
+
+
+.song-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+
+  .action-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background-color: #EBE7EE;
+    }
+
+    &.favorite {
+      &.is-favorite i {
+        color: #E85E38;
+      }
+    }
+
+    i {
+      font-size: 1.2rem;
+      color: #A238FF;
+    }
   }
 }
 
@@ -394,4 +445,5 @@ onUnmounted(() => {
     }
   }
 }
+
 </style>

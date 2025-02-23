@@ -5,6 +5,7 @@ import SearchView from '../views/SearchView.vue';
 import InfoPlaylist from '@/components/InfoPlaylist.vue';
 import InfoAlbum from '@/components/InfoAlbum.vue';
 import InfoArtist from '@/components/InfoArtist.vue';
+import InfoSong from '@/components/InfoSong.vue';
 
 const routes = [
   {
@@ -41,6 +42,11 @@ const routes = [
     path: '/artist/:id',
     name: 'artist-info',
     component: InfoArtist
+  },
+  {
+    path: '/song/:id',
+    name: 'song-info',
+    component: InfoSong
   }
 ];
 

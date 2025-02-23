@@ -49,12 +49,11 @@ const user = ref(null)
 
 
 
-// Función para verificar si una ruta está activa
 const isActive = (path) => {
   return route.path === path
 }
 
-// Al montar el componente, recuperar los datos del usuario de localStorage
+
 onMounted(() => {
   const storedUser = localStorage.getItem('user')
   if (storedUser) {

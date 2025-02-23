@@ -7,8 +7,8 @@
         <p>Cargando playlist...</p>
       </div>
       
-      <template v-else-if="playlist">
-        <!-- Header de la playlist -->
+      <div v-else-if="playlist">
+     
         <div class="playlist-header">
           <div class="cover-container">
             <img :src="playlist.picture_big" :alt="playlist.title">
@@ -28,7 +28,7 @@
           </div>
         </div>
   
-        <!-- Lista de canciones -->
+      
         <div class="songs-list">
           <div class="songs-header">
             <div class="header-row">
@@ -36,62 +36,95 @@
               <div class="header-cell">Título</div>
               <div class="header-cell">Artista</div>
               <div class="header-cell hide-mobile">Álbum</div>
-              <div class="header-cell">Duración</div>
+              <div class="header-cell text-right">
+                <i class="bi bi-clock"></i>
+              </div>
             </div>
           </div>
   
           <div class="songs-body">
-            <div v-for="(track, index) in playlist.tracks.data" 
-                 :key="track.id"
-                 class="song-row"
-                 :class="{ 
-                   'playing': playerStore.currentSong?.id === track.id,
-                   'not-readable': !track.readable 
-                 }"
-                 @dblclick="track.readable && playSong(track)">
-              <div class="song-cell number">
-                <span class="index">{{ index + 1 }}</span>
-                <button v-if="track.readable" 
-                        class="play-btn"
-                        @click="playSong(track)">
-                  <i :class="playerStore.currentSong?.id === track.id ? 'bi bi-pause-fill' : 'bi bi-play-fill'"></i>
+          <div 
+            v-for="(item, index) in playlist.tracks.data" 
+            :key="item.id"
+            class="song-row"
+            :class="{ 
+              'playing': playerStore.currentSong?.id === item.id && playerStore.isPlaying,
+              'not-readable': !item.readable 
+            }"
+            @dblclick="item.readable && togglePlay(item)"
+          >
+    
+            <div class="number">
+              <span class="index">{{ index + 1 }}</span>
+              <button 
+                v-if="item.readable" 
+                class="play-btn"
+                @click.stop="togglePlay(item)"
+                :class="{ 'is-playing': playerStore.currentSong?.id === item.id && playerStore.isPlaying }"
+              >
+                <i :class="[
+                  'bi',
+                  playerStore.currentSong?.id === item.id && playerStore.isPlaying 
+                    ? 'bi-pause-fill' 
+                    : 'bi-play-fill'
+                ]"></i>
+              </button>
+            </div>
+
+          
+            <div class="title">
+              <img 
+                v-if="item.album?.cover_small" 
+                :src="item.album.cover_small" 
+                :alt="item.title" 
+                class="song-album-image"
+              >
+              <div class="song-info">
+
+                <div>    <router-link 
+                  :to="`/song/${item.id}`" 
+                  class="song-title-link"
+                >
+                  {{ item.title }}
+                </router-link></div>
+            
+                
+                <span v-if="item.explicit_lyrics" class="explicit-badge">E</span>
+              </div>
+            </div>
+
+            <div class="artist">
+              <router-link :to="`/artist/${item.artist.id}`">
+                {{ item.artist.name }}
+              </router-link>
+            </div>
+
+       
+            <div class="album album-cell">
+              <router-link :to="`/album/${item.album.id}`">
+                {{ item.album.title }}
+              </router-link>
+            </div>
+
+            <div class="actions">
+              <div class="song-actions">
+                <button 
+                  class="action-btn favorite"
+                  @click="handleFavorite(item)"
+                  :class="{ 'is-favorite': favoritesStore.isFavorite(item.id) }"
+                >
+                  <i :class="favoritesStore.isFavorite(item.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+                </button>
+                <button class="action-btn" @click="addToQueue(item)">
+                  <i class="bi bi-plus"></i>
                 </button>
               </div>
-              <div class="song-cell title">
-                <img :src="track.album.cover_small" :alt="track.title">
-                <div class="song-info">
-                  <span :class="{ 'text-muted': !track.readable }">{{ track.title }}</span>
-                  <span v-if="track.explicit_lyrics" class="explicit-badge">E</span>
-                </div>
-              </div>
-              <div class="song-cell artist">
-                <router-link :to="'/artist/' + track.artist.id">
-                  {{ track.artist.name }}
-                </router-link>
-              </div>
-              <div class="song-cell album hide-mobile">
-                <router-link :to="'/album/' + track.album.id">
-                  {{ track.album.title }}
-                </router-link>
-              </div>
-              <div class="song-cell duration">
-                <div class="song-actions" v-if="track.readable">
-                  <button 
-                    class="action-btn favorite"
-                    @click="handleFavorite(track)"
-                    :class="{ 'is-favorite': favoritesStore.isFavorite(track.id) }">
-                    <i :class="favoritesStore.isFavorite(track.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
-                  </button>
-                  <button class="action-btn" @click="addToQueue(track)">
-                    <i class="bi bi-plus"></i>
-                  </button>
-                </div>
-                <span class="time">{{ formatDuration(track.duration) }}</span>
-              </div>
+              <span class="duration">{{ formatDuration(item.duration) }}</span>
             </div>
           </div>
         </div>
-      </template>
+        </div>
+      </div>
   
       <div v-else-if="error" class="error-message">
         {{ error }}
@@ -126,6 +159,18 @@
     if (!song.readable) return
     playerStore.playSong(song)
   }
+
+
+  const togglePlay = (song) => {
+  if (!song.readable) return
+
+  if (playerStore.currentSong?.id === song.id) {
+    playerStore.togglePlay()
+    return
+  }
+
+  playerStore.playSong(song)
+}
   
   const addToQueue = (song) => {
     if (!song.readable) return
@@ -248,22 +293,104 @@
     }
   
     .song-row {
+      cursor: pointer;
+      user-select: none;
       border-radius: 8px;
       transition: all 0.2s;
-  
+
+
+          .actions {
+        display: flex;
+        align-items: center;
+        height: 100%;
+
+        .song-actions {
+          display: flex;
+          margin-right: 7px;
+          align-items: center; 
+          opacity: 0;
+          transition: opacity 0.2s;
+
+          .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            &:hover {
+              background-color: #EBE7EE;
+            }
+
+            &.favorite {
+          &.is-favorite i {
+            color: #E85E38;
+          }
+        }
+
+            i {
+              font-size: 1.2rem;
+              color: #A238FF;
+            }
+          }
+        }
+      }
+
       &:hover {
         background-color: #F5F2F8;
-  
+
         .song-actions {
           opacity: 1;
         }
-  
-        .index {
-          display: none;
+
+        .number {
+          .index {
+            display: none;
+          }
+
+          .play-btn {
+            display: flex;
+          }
         }
-  
+      }
+
+      &.playing {
+        background-color: #F5F2F8;
+      }
+
+      &.not-readable {
+        opacity: 0.5;
+      }
+
+      .song-title-link{
+        text-decoration: none;
+        color: #333;
+      }
+
+      .number {
+        position: relative;
+        width: 40px;
+
+        .index {
+          display: block;
+        }
+
         .play-btn {
-          display: flex;
+          display: none;
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: #A238FF;
+          font-size: 1.2rem;
+          z-index: 10; 
         }
       }
   
@@ -323,13 +450,14 @@
         }
       }
   
-      .artist, .album {
+      .artist, .album, .title {
         a {
           color: inherit;
           text-decoration: none;
           
           &:hover {
             text-decoration: underline;
+            color: #A238FF;
           }
         }
       }
@@ -344,11 +472,12 @@
   }
   
   .song-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    opacity: 0;
-    transition: opacity 0.2s;
+  display: flex;
+  align-items: center; 
+  justify-content: center; 
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
   
     .action-btn {
       width: 32px;
@@ -381,33 +510,140 @@
   .text-muted {
     color: #666;
   }
-  
-  @media (max-width: 768px) {
-    .playlist-header {
-      flex-direction: column;
-      gap: 1rem;
-  
-      .cover-container {
-        width: 180px;
-        height: 180px;
-        margin: 0 auto;
+
+
+  .header-cell.text-right {
+  text-align: right;
+}
+
+@media (max-width: 467px) {
+  .playlist-header {
+    flex-direction: column;
+    gap: 1rem;
+
+    .cover-container {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto;
+    }
+
+    .info-container {
+      text-align: center;
+
+      h1 {
+        font-size: 1.5rem;
       }
-  
-      .info-container {
-        text-align: center;
-  
-        h1 {
-          font-size: 2rem;
+
+      .description {
+        font-size: 0.9rem;
+      }
+
+      .playlist-stats {
+        font-size: 0.8rem;
+      }
+
+      .creator-info {
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .songs-list {
+    .header-row, .song-row {
+      grid-template-columns: 40px 1fr 40px; 
+    }
+
+    .header-cell:not(.header-cell:first-child):not(.header-cell.text-right),
+    .song-row .artist,
+    .song-row .album,
+    .song-row .duration {
+      display: none; 
+    }
+
+    .song-row {
+      padding: 0.5rem;
+
+      .title {
+        gap: 0.5rem;
+
+        img {
+          width: 30px;
+          height: 30px;
+        }
+
+        .song-info {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.2rem;
+
+          .song-title-link {
+            font-size: 0.9rem;
+         
+         
+          }
+
+          .explicit-badge {
+            font-size: 0.7rem;
+          }
+        }
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+
+        .song-actions {
+          opacity: 1; 
+          gap: 0.3rem;
+
+          .action-btn {
+            width: 28px;
+            height: 28px;
+
+            i {
+              font-size: 1rem;
+            }
+          }
         }
       }
     }
+  }
+}
   
-    .hide-mobile {
-      display: none;
+@media (max-width: 768px) {
+  .songs-list {
+    .header-row {
+   
+      grid-template-columns: 50px 3fr 2fr !important;
+
+   
+      .album-cell,
+      .hide-mobile,
+      .header-cell:last-child {
+        display: none;
+      }
     }
-  
+
     .song-row {
-      grid-template-columns: 50px 3fr 2fr 1fr !important;
+   
+      grid-template-columns: 50px 3fr 1fr 1fr;
+
+
+      .album-cell,
+      .duration, .album {
+        display: none;
+      }
+
     }
   }
+}
+
+@media (max-width: 480px) {
+  .songs-list .song-row {
+ 
+    grid-template-columns: 50px 2fr 1fr !important;
+  }
+}
+  
   </style>

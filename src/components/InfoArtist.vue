@@ -1,13 +1,12 @@
 <template>
-  <SearchBar :initialQuery="$route.query.q || ''" />
+  <SearchBar :initial-query="$route.query.q || ''" />
   <div class="artist-info">
     <div v-if="loading" class="loading">
       <p>Cargando artista...</p>
     </div>
     
     <template v-else-if="artist">
-      <!-- Cabecera del artista -->
-      <div class="artist-header">
+      <header class="artist-header">
         <img :src="artist.picture_xl" :alt="artist.name" class="artist-banner">
         <div class="artist-info-overlay">
           <h1>{{ artist.name }}</h1>
@@ -16,86 +15,90 @@
             <span>{{ formatFans(artist.nb_fan) }} fans</span>
           </div>
         </div>
-      </div>
+      </header>
 
       <section class="top-tracks">
-    <h2>Canciones Populares</h2>
-    <div class="tracks-list">
-      <div class="songs-header">
-        <div class="header-row">
-          <div class="header-cell">#</div>
-          <div class="header-cell">Título</div>
-          <div class="header-cell text-right">
-            <i class="bi bi-clock"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="songs-body">
-        <div v-for="(track, index) in topTracks" 
-             :key="track.id"
-             class="song-row"
-             :class="{ 
-               'playing': playerStore.currentSong?.id === track.id && playerStore.isPlaying,
-               'not-readable': !track.readable 
-             }"
-             @dblclick="track.readable && togglePlay(track)">
-          <div class="number">
-            <span class="index">{{ index + 1 }}</span>
-            <button v-if="track.readable" 
-                    class="play-btn"
-                    @click.stop="togglePlay(track)"
-                    :class="{ 'is-playing': playerStore.currentSong?.id === track.id && playerStore.isPlaying }">
-              <i :class="[
-                'bi',
-                playerStore.currentSong?.id === track.id && playerStore.isPlaying 
-                  ? 'bi-pause-fill' 
-                  : 'bi-play-fill'
-              ]"></i>
-            </button>
-          </div>
-          <div class="title">
-            <div class="song-info">
-              <img :src="track.album.cover_small" :alt="track.title">
-              <span :class="{ 'text-muted': !track.readable }">{{ track.title }}</span>
-              <span v-if="track.explicit_lyrics" class="explicit-badge">E</span>
+        <h2>Canciones Populares</h2>
+        <div class="tracks-list">
+          <div class="songs-header">
+            <div class="header-row">
+              <div class="header-cell">#</div>
+              <div class="header-cell">Título</div>
+              <div class="header-cell">Álbum</div>
+              <div class="header-cell text-right">
+                <i class="bi bi-clock"></i>
+              </div>
             </div>
           </div>
-          <div class="actions">
-            <div class="song-actions">
-              <button 
-                v-if="track.readable" 
-                class="action-btn play"
-                @click.stop="togglePlay(track)"
+
+          <div class="songs-body">
+            <div v-for="(track, index) in topTracks" 
+                :key="track.id"
+                class="song-row"
+                :class="{ 
+                  'playing': playerStore.currentSong?.id === track.id && playerStore.isPlaying,
+                  'not-readable': !track.readable 
+                }"
+                @dblclick="track.readable && togglePlay(track)">
+              <div class="number">
+                <span class="index">{{ index + 1 }}</span>
+                <button v-if="track.readable" 
+                        class="play-btn"
+                        @click.stop="togglePlay(track)"
+                        :class="{ 'is-playing': playerStore.currentSong?.id === track.id && playerStore.isPlaying }">
+                  <i :class="[
+                    'bi',
+                    playerStore.currentSong?.id === track.id && playerStore.isPlaying 
+                      ? 'bi-pause-fill' 
+                      : 'bi-play-fill'
+                  ]"></i>
+                </button>
+              </div>
+              <div class="title">
+              <img 
+                v-if="track.album?.cover_small" 
+                :src="track.album.cover_small" 
+                :alt="track.title" 
+                class="song-album-image"
               >
-                <i :class="[
-                  'bi',
-                  {
-                    'bi-pause-fill': playerStore.currentSong?.id === track.id && playerStore.isPlaying,
-                    'bi-play-fill': playerStore.currentSong?.id !== track.id || !playerStore.isPlaying
-                  }
-                ]"></i>
-              </button>
-              <button 
-                class="action-btn favorite"
-                @click="handleFavorite(track)"
-                :class="{ 'is-favorite': favoritesStore.isFavorite(track.id) }"
-              >
-                <i :class="favoritesStore.isFavorite(track.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
-              </button>
-              <button class="action-btn" @click="addToQueue(track)">
-                <i class="bi bi-plus"></i>
-              </button>
+              <div class="song-info">
+
+                <div>    <router-link 
+                  :to="`/song/${track.id}`" 
+                  class="song-title-link"
+                >
+                  {{ track.title }}
+                </router-link></div>
+            
+                
+                <span v-if="track.explicit_lyrics" class="explicit-badge">E</span>
+              </div>
             </div>
-            <span class="duration">{{ formatDuration(track.duration) }}</span>
+              <div class="album">
+                <router-link :to="`/album/${track.album.id}`">
+                  {{ track.album.title }}
+                </router-link>
+              </div>
+              <div class="actions">
+                <div class="song-actions">
+                  <button 
+                    class="action-btn favorite"
+                    @click="handleFavorite(track)"
+                    :class="{ 'is-favorite': favoritesStore.isFavorite(track.id) }"
+                  >
+                    <i :class="favoritesStore.isFavorite(track.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
+                  </button>
+                  <button class="action-btn" @click="addToQueue(track)">
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </div>
+                <span class="duration">{{ formatDuration(track.duration) }}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
- 
+      </section>
 
-      <!-- Álbumes -->
       <section class="albums-section">
         <h2>Álbumes</h2>
         <div class="albums-grid">
@@ -137,6 +140,7 @@ const albums = ref([])
 const loading = ref(true)
 const error = ref(null)
 
+// He creado este método para formatear la duración de la canción de segundos a minutos:segundos
 const formatDuration = (seconds) => {
   if (!seconds) return '0:00'
   const minutes = Math.floor(seconds / 60)
@@ -144,29 +148,31 @@ const formatDuration = (seconds) => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
+// Este método formatea el número de fans para mostrarlo de forma compacta (ej: 1.2M)
 const formatFans = (number) => {
   if (!number) return '0'
   return new Intl.NumberFormat('es-ES', { notation: 'compact' }).format(number)
 }
 
+// Función para alternar la reproducción de una canción
 const togglePlay = (song) => {
   if (!song.readable) return
 
-  // Si es la misma canción que está sonando, solo toggleamos play/pause
   if (playerStore.currentSong?.id === song.id) {
     playerStore.togglePlay()
     return
   }
 
-  // Si es una nueva canción, la reproducimos
   playerStore.playSong(song)
 }
 
+// Función para añadir una canción a la cola de reproducción
 const addToQueue = (song) => {
   if (!song.readable) return
   playerStore.addToQueue(song)
 }
 
+// Función para manejar el estado de una canción como favorita
 const handleFavorite = (song) => {
   if (favoritesStore.isFavorite(song.id)) {
     favoritesStore.removeSong(song.id)
@@ -175,6 +181,7 @@ const handleFavorite = (song) => {
   }
 }
 
+// Al montar el componente, se cargan los datos del artista, sus canciones top y sus álbumes
 onMounted(async () => {
   try {
     loading.value = true
@@ -205,7 +212,6 @@ onMounted(async () => {
   }
 })
 </script>
-
 
 <style lang="scss" scoped>
 .artist-info {
@@ -290,6 +296,8 @@ section {
   }
 
   .song-row {
+    user-select: none; 
+    cursor: pointer;
     display: grid;
     grid-template-columns: 50px 3fr 2fr 120px;
     align-items: center;
@@ -304,12 +312,14 @@ section {
         opacity: 1;
       }
 
-      .index {
-        display: none;
-      }
+      .number {
+        .index {
+          display: none;
+        }
 
-      .play-btn {
-        display: flex;
+        .play-btn {
+          display: flex;
+        }
       }
     }
 
@@ -340,26 +350,63 @@ section {
         cursor: pointer;
         color: #A238FF;
         font-size: 1.2rem;
+        z-index: 10;
       }
     }
 
     .title {
-      .song-info {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 
-      .explicit-badge {
-        background-color: #666;
-        color: white;
-        padding: 0.1rem 0.3rem;
-        border-radius: 3px;
-        font-size: 0.8rem;
+  .song-album-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  .song-info {
+    display: flex;
+    flex-direction: row;
+    gap: 0.3rem;
+
+    .song-title-link {
+      color: inherit;
+      text-decoration: none;
+      font-weight: 500;
+      
+      &:hover {
+        text-decoration: underline;
+        color: #A238FF;
       }
     }
 
-    .artist {
+    .song-details {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #666;
+
+      a {
+        color: #666;
+        text-decoration: none;
+        
+        &:hover {
+          text-decoration: underline;
+          color: #A238FF;
+        }
+      }
+
+      .separator {
+        color: #999;
+      }
+    }
+  }
+}
+
+    .album {
       a {
         color: inherit;
         text-decoration: none;
@@ -460,16 +507,6 @@ section {
   }
 }
 
-.song-info{
-  img {
-          width: 40px;
-          height: 40px;
-          border-radius: 4px;
-        }
-}
-
-
-
 @media (max-width: 768px) {
   .artist-header {
     height: 250px;
@@ -493,5 +530,9 @@ section {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
     gap: 1rem !important;
   }
+}
+
+.header-cell.text-right {
+  text-align: right; 
 }
 </style>

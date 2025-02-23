@@ -12,20 +12,20 @@ export const usePlayerStore = defineStore('player', {
         setQueue(songs) {
             this.queue = songs
 
-            // Establecer la primera canción si la cola no está vacía
+            // Establecemos la primera canción si la cola no está vacía
             if (songs.length > 0 && !this.currentSong) {
                 this.setCurrentSong(songs[0])
             }
         },
 
         playSong(song) {
-            // Intentar reproducir el preview original
+            // Intentamos reproducir el preview original
             if (this.isValidPreview(song.preview)) {
                 this.setCurrentSong(song)
                 return
             }
 
-            // Intentar reproducir un preview alternativo
+            // Intentamos reproducir un preview alternativo
             const alternativePreview = this.getAlternativePreview(song)
 
             if (alternativePreview) {
@@ -48,13 +48,12 @@ export const usePlayerStore = defineStore('player', {
         },
 
         getAlternativePreview(song) {
-            // Estrategias alternativas para obtener preview
+
             const strategies = [
                 // Reemplazar parte de la URL
                 () => song.preview?.replace('https://cdnt-preview', 'https://preview'),
-                // Usar un proxy genérico (opcional y no siempre funciona)
+
                 () => `https://corsproxy.io/?${encodeURIComponent(song.preview)}`,
-                // Si todo falla, devolver null
                 () => null
             ]
 

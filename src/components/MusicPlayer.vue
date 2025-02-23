@@ -157,7 +157,7 @@ const handleEnded = () => {
 };
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 
 .music-player{
   border-top: 2px solid #E1DDE4;
