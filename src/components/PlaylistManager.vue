@@ -1,4 +1,4 @@
-# PlaylistManager.vue
+
 <template>
   <div class="playlist-manager">
     <div class="songs-list">
@@ -160,7 +160,7 @@ const formatDuration = (seconds) => {
  * Si la canción actual está sonando, la pauso.
  * Si es una nueva canción, la reproduzco y actualizo la cola.
  */
-const togglePlay = (song) => {
+ const togglePlay = (song) => {
   if (!song.readable) return;
 
   if (playerStore.currentSong?.id === song.id) {
@@ -168,11 +168,20 @@ const togglePlay = (song) => {
     return;
   }
 
-  const currentIndex = playlist.value.findIndex(track => track.id === song.id);
-  const nextSongs = playlist.value.slice(currentIndex + 1).filter(track => track.readable);
+  // Filtrar solo las canciones reproducibles
+  const playableSongs = playlist.value.filter(track => track.readable);
+  
+  // Obtener el índice de la canción seleccionada
+  const selectedIndex = playableSongs.findIndex(track => track.id === song.id);
+  
+  // Reordenar la lista para que empiece desde la canción seleccionada
+  const reorderedPlaylist = [
+    ...playableSongs.slice(selectedIndex),
+    ...playableSongs.slice(0, selectedIndex)
+  ];
 
+  playerStore.setQueue(reorderedPlaylist);
   playerStore.playSong(song);
-  playerStore.setQueue(nextSongs);
 };
 
 /**
@@ -259,14 +268,11 @@ const handleDragEnd = () => {
  * Yo me encargo de procesar la acción de soltar el elemento
  * y actualizar el orden de la playlist
  */
-const handleDrop = (event, dropIndex) => {
+ const handleDrop = (event, dropIndex) => {
   event.preventDefault();
   event.stopPropagation();
   
   const startIndex = parseInt(event.dataTransfer.getData('text/plain'));
-  
-  // Debug logs
-  console.log('Drop event - Start Index:', startIndex, 'Drop Index:', dropIndex);
   
   if (isNaN(startIndex) || startIndex === dropIndex) {
     handleDragEnd();
@@ -278,22 +284,24 @@ const handleDrop = (event, dropIndex) => {
   const [movedItem] = newPlaylist.splice(startIndex, 1);
   newPlaylist.splice(dropIndex, 0, movedItem);
 
-  // Debug log
-  console.log('New playlist order:', newPlaylist);
-
   // Actualizar el store
   favoritesStore.updatePlaylistOrder(newPlaylist);
   
   // Limpiar estados
   handleDragEnd();
   
-  // Actualizar cola de reproducción si es necesario
+  // Actualizar cola de reproducción manteniendo todas las canciones
   if (playerStore.currentSong) {
-    const currentIndex = newPlaylist.findIndex(song => song.id === playerStore.currentSong.id);
-    if (currentIndex !== -1) {
-      const nextSongs = newPlaylist.slice(currentIndex + 1).filter(song => song.readable);
-      playerStore.setQueue(nextSongs);
-    }
+    const playableSongs = newPlaylist.filter(track => track.readable);
+    const currentIndex = playableSongs.findIndex(song => song.id === playerStore.currentSong.id);
+    
+    // Reorganizar para mantener el orden circular desde la canción actual
+    const reorderedPlaylist = [
+      ...playableSongs.slice(currentIndex),
+      ...playableSongs.slice(0, currentIndex)
+    ];
+
+    playerStore.setQueue(reorderedPlaylist);
   }
 };
 </script>
@@ -345,7 +353,7 @@ $black: #000;
       transition: background-color 0.3s ease;
 
       &:hover {
-        background-color: darken($primary-color, 10%);
+        background-color: $primary-color;
       }
     }
   }
@@ -393,7 +401,7 @@ $black: #000;
   }
 
   &.drag-over {
-    background-color: lighten($background-color, 2%);
+    background-color: $background-color;
     transform: translateY(2px);
     box-shadow: 0 -2px 0 $primary-color;
   }
@@ -403,6 +411,9 @@ $black: #000;
 
     .song-actions {
       opacity: 1;
+      background-color: #F5F2F8;
+      width: 50px;
+      margin-right: 5px;
     }
 
     .number {
@@ -465,7 +476,7 @@ $black: #000;
     justify-content: center;
 
     &:hover {
-      color: darken($primary-color, 10%);
+      color: $primary-color;
       transform: scale(1.1);
     }
   }
@@ -516,8 +527,8 @@ $black: #000;
     .song-title-wrapper {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      max-width: 100%;
+      gap: 0.5rem;  
+      width: 150px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -596,9 +607,10 @@ $black: #000;
 .song-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
   opacity: 0;
+  width: 50px;
   transition: opacity 0.2s;
+  margin-right: 5px;
 
   .action-btn {
     width: 32px;
@@ -633,19 +645,19 @@ $black: #000;
   margin-left: auto;
 }
 
+/* Estilos base */
 .songs-header .header-row,
 .song-row {
   display: grid;
-  grid-template-columns: 50px minmax(300px, 1fr) minmax(150px, 2fr) minmax(150px, 2fr) 80px;
+  grid-template-columns: 50px minmax(300px, 1fr) minmax(75px, 2fr) minmax(70px, 2fr) 80px;
   align-items: center;
-  padding: 0.8rem;
 }
 
-// Tablet (768px - 1024px)
+
 @media (max-width: 1024px) {
   .songs-header .header-row,
   .song-row {
-    grid-template-columns: 50px minmax(200px, 1fr) minmax(120px, 2fr) 80px;
+    grid-template-columns: 50px minmax(200px, 1fr) minmax(120px, 1fr) 80px;
   }
   
   .album-cell {
@@ -653,10 +665,21 @@ $black: #000;
   }
 }
 
-// Móvil (< 768px)
+
 @media (max-width: 768px) {
+
+  .songs-header .header-row,
+.song-row {
+  display: grid;
+  grid-template-columns: 100%;
+  align-items: center;
+}
   .playlist-manager {
     padding: 1rem;
+  }
+
+  .duration, .artist-cell{
+    display: none;
   }
 
   .songs-header .header-row,
@@ -666,45 +689,38 @@ $black: #000;
   }
 
   .artist,
-  .album-cell, .duration-cell {
+  .album-cell,
+  .duration-cell {
     display: none;
   }
 
-  .title {
-    .image-container {
-      width: 35px;
-      height: 35px;
-    }
+  .title .image-container {
+    width: 35px;
+    height: 35px;
   }
 
   .song-actions {
-    position: absolute;
-    right: 70px;
-    opacity: 0;
-    gap: 0.25rem;
 
-    .action-btn {
-      width: 24px;
-      height: 24px;
-      
-      i {
-        font-size: 1rem;
-      }
-    }
+    opacity: 0;
+    margin-right: 5px;
+  }
+
+  .song-actions .action-btn {
+    width: 24px;
+    height: 24px;
+  }
+
+  .song-actions .action-btn i {
+    font-size: 1rem;
   }
 
   .number {
     width: 25px;
     height: 25px;
-    
-    .play-btn {
-      font-size: 1rem;
-    }
   }
 
-  .duration {
-    font-size: 0.85rem;
+  .number .play-btn {
+    font-size: 1rem;
   }
 }
 </style>
-    

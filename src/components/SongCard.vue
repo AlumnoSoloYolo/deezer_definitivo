@@ -1,4 +1,4 @@
-<!-- SongCard.vue -->
+
 <template>
     <div 
       class="song-row"
@@ -8,7 +8,7 @@
       }"
       @dblclick="song.readable && togglePlay(song)"
     >
-      <!-- Número y botón play -->
+     
       <div class="number">
         <span class="index">{{ index + 1 }}</span>
         <button 
@@ -26,7 +26,7 @@
         </button>
       </div>
   
-      <!-- Título con imagen y detalles -->
+     
       <div class="title">
         <div class="image-container">
           <img 

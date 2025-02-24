@@ -1,4 +1,4 @@
-<!-- PlaylistInfo.vue -->
+
 <template>
 
 <SearchBar :initialQuery="$route.query.q || ''" />

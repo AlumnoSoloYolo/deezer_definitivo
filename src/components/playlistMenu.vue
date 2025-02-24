@@ -1,4 +1,4 @@
-<!-- PlaylistMenu.vue -->
+
 <template>
   <div class="playlist-section">
     <h2 class="playlist-title">

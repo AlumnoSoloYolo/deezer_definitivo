@@ -1,4 +1,4 @@
-<!-- SearchBar.vue -->
+
 <template>
   <div class="search-container">
     <div class="search-wrapper">

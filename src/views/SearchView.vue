@@ -1,4 +1,4 @@
-<!-- SearchView.vue -->
+
 <template>
   <div class="search-page">
     <SearchBar :initialQuery="$route.query.q || ''" />
@@ -425,9 +425,7 @@ onMounted(() => {
 
 
 <style lang="scss" scoped>
-.search-page {
-  padding: 1rem;
-}
+
 
 .loading, .no-results {
   text-align: center;

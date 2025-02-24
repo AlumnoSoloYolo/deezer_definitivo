@@ -1,4 +1,4 @@
-<!-- SongInfo.vue -->
+
 <template>
     <SearchBar :initialQuery="$route.query.q || ''" />
   <div class="song-info-container">

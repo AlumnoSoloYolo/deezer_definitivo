@@ -8,24 +8,27 @@ export const usePlayerStore = defineStore('player', {
         playbackError: null
     }),
     actions: {
-        // Método para establecer la cola de reproducción
+        // Establecer cola completa
         setQueue(songs) {
             this.queue = songs
 
-            // Establecemos la primera canción si la cola no está vacía
             if (songs.length > 0 && !this.currentSong) {
                 this.setCurrentSong(songs[0])
             }
         },
 
+        // Reproducir una canción específica sin modificar la cola
         playSong(song) {
-            // Intentamos reproducir el preview original
+            // Si la canción no está en la cola, la añadimos
+            if (!this.queue.some(s => s.id === song.id)) {
+                this.queue.push(song)
+            }
+
             if (this.isValidPreview(song.preview)) {
                 this.setCurrentSong(song)
                 return
             }
 
-            // Intentamos reproducir un preview alternativo
             const alternativePreview = this.getAlternativePreview(song)
 
             if (alternativePreview) {
@@ -48,11 +51,8 @@ export const usePlayerStore = defineStore('player', {
         },
 
         getAlternativePreview(song) {
-
             const strategies = [
-                // Reemplazar parte de la URL
                 () => song.preview?.replace('https://cdnt-preview', 'https://preview'),
-
                 () => `https://corsproxy.io/?${encodeURIComponent(song.preview)}`,
                 () => null
             ]
@@ -107,10 +107,8 @@ export const usePlayerStore = defineStore('player', {
                 song => song.id === this.currentSong?.id
             )
 
-            const nextIndex = currentIndex < this.queue.length - 1
-                ? currentIndex + 1
-                : 0
-
+            // Navegación circular usando el operador módulo
+            const nextIndex = (currentIndex + 1) % this.queue.length
             this.setCurrentSong(this.queue[nextIndex])
         },
 
@@ -121,11 +119,9 @@ export const usePlayerStore = defineStore('player', {
                 song => song.id === this.currentSong?.id
             )
 
-            const prevIndex = currentIndex > 0
-                ? currentIndex - 1
-                : this.queue.length - 1
-
-            this.setCurrentSong(this.queue[prevIndex])
+            // Navegación circular hacia atrás
+            const previousIndex = (currentIndex - 1 + this.queue.length) % this.queue.length
+            this.setCurrentSong(this.queue[previousIndex])
         }
     }
 })

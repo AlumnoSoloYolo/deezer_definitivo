@@ -136,9 +136,6 @@ body, html {
   overflow-y: auto;
 }
 
-.main-content {
-  padding: 1rem;
-}
 
 .logo {
   margin-top: 10px;

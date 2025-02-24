@@ -1,67 +1,4 @@
-<!-- components/MusicPlayer.vue -->
-<template>
-  <div class="music-player fixed-bottom p-2">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-md-4">
-          <div class="d-flex align-items-center" v-if="currentSong">
-            <img :src="currentSong.album?.cover_small" class="me-3" :alt="currentSong.title">
-            <div>
-              <h6 class="mb-0 text-dark">{{ currentSong.title }}</h6>
-              <small class="text-secondary">{{ currentSong.artist?.name }}</small>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="controls d-flex align-items-center justify-content-center mb-2">
-            <button class="btn btn-link text-dark mx-2 p-0 control-button" @click="previousSong">
-              <i class="bi bi-skip-start-fill"></i>
-            </button>
-            <button class="btn play-button mx-2" @click="togglePlay">
-              <i :class="isPlaying ? 'bi bi-pause-fill' : 'bi bi-play-fill'"></i>
-            </button>
-            <button class="btn btn-link text-dark mx-2 p-0 control-button" @click="nextSong">
-              <i class="bi bi-skip-end-fill"></i>
-            </button>
-          </div>
-          <div class="progress-container">
-            <div class="d-flex align-items-center">
-              <small class="text-secondary me-2">{{ formatTime(currentTime) }}</small>
-              <div class="progress flex-grow-1" style="height: 4px;">
-                <div class="progress-bar bg-dark" :style="{width: `${progress}%`}"></div>
-              </div>
-              <small class="text-secondary ms-2">{{ formatTime(duration) }}</small>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-4">
-          <div class="volume-control d-flex align-items-center justify-content-end">
-            <div class="volume-wrapper">
-              <div class="volume-slider" v-show="showVolumeControl">
-                <input 
-                  type="range" 
-                  class="form-range" 
-                  min="0" 
-                  max="100" 
-                  v-model="volume">
-              </div>
-              <button class="btn btn-link text-dark p-0" @click="toggleVolumeControl">
-                <i :class="volumeIcon"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <audio
-      ref="audioPlayer"
-      :src="currentSong?.preview"
-      @timeupdate="updateProgress"
-      @loadedmetadata="handleLoadedMetadata"
-      @ended="handleEnded">
-    </audio>
-  </div>
-</template>
+
 
 <script setup>
 import { ref, computed, watch } from 'vue';
@@ -157,97 +94,284 @@ const handleEnded = () => {
 };
 </script>
 
+
+<template>
+  <div class="music-player fixed-bottom">
+    <div class="player-grid">
+    
+      <div class="song-info" v-if="currentSong">
+        <img :src="currentSong.album?.cover_small" :alt="currentSong.title">
+        <div class="song-details">
+          <h6 class="mb-0">{{ currentSong.title }}</h6>
+          <small class="text-secondary">{{ currentSong.artist?.name }}</small>
+        </div>
+      </div>
+
+    
+      <div class="player-controls">
+        <button class="btn btn-link text-dark control-button" @click="previousSong">
+          <i class="bi bi-skip-start-fill"></i>
+        </button>
+        <button class="btn play-button" @click="togglePlay">
+          <i :class="isPlaying ? 'bi bi-pause-fill' : 'bi bi-play-fill'"></i>
+        </button>
+        <button class="btn btn-link text-dark control-button" @click="nextSong">
+          <i class="bi bi-skip-end-fill"></i>
+        </button>
+      </div>
+
+     
+      <div class="volume-control">
+        <input type="range" class="volume-range" min="0" max="100" v-model="volume">
+        <button class="btn btn-link text-dark volume-button" @click="toggleMute">
+          <i :class="volumeIcon"></i>
+        </button>
+      </div>
+
+     
+      <div class="progress-container">
+        <span class="time">{{ formatTime(currentTime) }}</span>
+        <div class="progress">
+          <div class="progress-bar" :style="{width: `${progress}%`}"></div>
+        </div>
+        <span class="time">{{ formatTime(duration) }}</span>
+      </div>
+    </div>
+
+    <audio
+      ref="audioPlayer"
+      :src="currentSong?.preview"
+      @timeupdate="updateProgress"
+      @loadedmetadata="handleLoadedMetadata"
+      @ended="handleEnded">
+    </audio>
+  </div>
+</template>
+
 <style lang="scss" scoped>
 
-.music-player{
-  border-top: 2px solid #E1DDE4;
-  background-color: #F5F2F8;
-  height: 80px;
+$primary-color: #A238FF;
+$background-color: #F5F2F8;
+$border-color: #E1DDE4;
+
+.music-player {
+  border-top: 2px solid $border-color;
+  background-color: $background-color;
+  padding: 1rem;
+  height: auto;
 }
 
+.player-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) auto minmax(150px, 1fr);
+  grid-template-rows: auto auto;
+  gap: 1rem;
+  align-items: center;
 
-.progress-bar {
-  transition: width 0.1s linear;
+  .progress-container {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }
 
-.play-button {
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  background-color: #A238FF;
+.song-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+
+  img {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+  }
+
+  .song-details {
+    min-width: 0;
+    h6 {
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    small {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+.player-controls {
+  grid-column: 2;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
+  margin: 0 auto;
   padding: 0;
-  transition: all 0.2s ease;
+  min-width: 180px;
 
-  .bi-play-fill{
+  .control-button {
+    padding: 0;
+    i {
+      font-size: 1.5rem;
+    }
+  }
+
+  .play-button {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background-color: $primary-color;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    i {
+      color: white;
+      font-size: 1.2rem;
+    }
+
+    &:hover {
+      transform: scale(1.05);
+      background-color: darken($primary-color, 10%);
+    }
+  }
+}
+
+.volume-control {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+
+  .volume-range {
+    width: 100px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: rgba($primary-color, 0.2);
+    border-radius: 2px;
     
-    color: #F5F2F8;
+    &::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      background: $primary-color;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    &::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      background: $primary-color;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
   }
 
-  .bi-pause-fill{
-    color: #F5F2F8;
+  .volume-button {
+    padding: 0;
+    i {
+      font-size: 1.5rem;
+    }
   }
 }
 
-.play-button:hover {
-  transform: scale(1.05);
-  background-color: #7f2bc9;
-}
+.progress-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 
-.play-button i {
-  font-size: 1.2rem;
-  color: #333;
-}
-
-.control-button i {
-  font-size: 1.5rem;
-}
-
-.volume-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.volume-wrapper button i {
-  font-size: 1.5rem;
-}
-
-.volume-slider {
-  position: absolute;
-  bottom: 100%;
-  right: -12px;
-  background: white;
-  padding: 10px;
-  border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  margin-bottom: 10px;
-  width: 120px;
-  transform-origin: bottom right;
-  animation: fadeIn 0.2s ease;
-}
-
-.volume-slider::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  right: 15px;
-  width: 10px;
-  height: 10px;
-  background: white;
-  transform: rotate(45deg);
-  box-shadow: 2px 2px 3px rgba(0,0,0,0.1);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
+  .time {
+    font-size: 0.75rem;
+    color: #666;
+    min-width: 45px;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+
+  .progress {
+    flex: 1;
+    height: 4px;
+    background-color: rgba($primary-color, 0.2);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+
+    .progress-bar {
+      background-color: $primary-color;
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.1s linear;
+    }
+
+    &:hover {
+      .progress-bar {
+        background-color: darken($primary-color, 10%);
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .player-grid {
+    grid-template-columns: minmax(150px, 1fr) auto minmax(100px, 1fr);
+    gap: 0.5rem;
+  }
+
+  .song-info {
+    gap: 0.5rem;
+    .song-details {
+      h6 { font-size: 0.9rem; }
+      small { font-size: 0.8rem; }
+    }
+  }
+
+  .player-controls {
+    min-width: 150px;
+    gap: 0.5rem;
+  }
+
+  .volume-control {
+    .volume-range {
+      width: 60px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+ 
+  
+  .player-grid {
+    grid-template-columns: minmax(120px, 1fr) auto minmax(80px, 1fr);
+  }
+
+  .player-controls {
+    min-width: 120px;
+    
+    .control-button i {
+      font-size: 1.2rem;
+    }
+    
+    .play-button {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  .volume-control {
+    .volume-range {
+      width: 40px;
+    }
+    
+    .volume-button i {
+      font-size: 1.2rem;
+    }
   }
 }
 </style>
