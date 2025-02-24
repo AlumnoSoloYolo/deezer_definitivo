@@ -10,11 +10,11 @@
         <p>Cargando álbum...</p>
       </div>
       
-      <!-- Contenido del álbum -->
+      
       <template v-else-if="album">
-        <!-- Encabezado del álbum -->
+     
         <section class="album-header">
-          <!-- Portada del álbum -->
+         
           <div class="cover-container">
             <img 
               :src="album.cover_big || album.cover_xl" 
@@ -22,14 +22,14 @@
             >
           </div>
           
-          <!-- Información del álbum -->
+         
           <div class="info-container">
             <span class="album-type">Álbum</span>
             
             <h1>{{ album.title }}</h1>
             
             <div class="album-meta">
-              <!-- Enlace al artista -->
+            
               <router-link 
                 :to="'/artist/' + album.artist.id" 
                 class="artist-link"
@@ -41,7 +41,7 @@
                 <span>{{ album.artist.name }}</span>
               </router-link>
               
-              <!-- Estadísticas del álbum -->
+             
               <div class="stats">
                 <span>{{ new Date(album.release_date).getFullYear() }}</span>
                 <span class="dot">•</span>
@@ -55,7 +55,7 @@
 
         <!-- Lista de canciones -->
         <section class="songs-list">
-          <!-- Encabezado de la lista -->
+          
           <div class="songs-header">
             <div class="header-row">
               <div class="header-cell">#</div>
@@ -66,7 +66,7 @@
             </div>
           </div>
 
-          <!-- Cuerpo de la lista de canciones -->
+          
           <div class="songs-body">
             <div 
               v-for="(song, index) in album.tracks.data" 
@@ -78,7 +78,7 @@
               }"
               @dblclick="handleSongDoubleClick(song)"
             >
-              <!-- Número de canción y botón de reproducción -->
+             
               <div class="number">
                 <span class="index">{{ index + 1 }}</span>
                 <button 
@@ -91,7 +91,7 @@
                 </button>
               </div>
 
-              <!-- Título de la canción -->
+  
               <div class="title">
                 <div class="image-container">
                   <img 
@@ -128,7 +128,7 @@
 
             
 
-              <!-- Acciones y duración -->
+         
               <div class="actions">
                 <div class="song-actions">
                   <button 
@@ -158,7 +158,7 @@
         </section>
       </template>
 
-      <!-- Estado de error -->
+     
       <div v-else-if="error" class="error-message">
         {{ error }}
       </div>
@@ -183,8 +183,7 @@ const album = ref(null)
 const loading = ref(true)
 const error = ref(null)
 
-// Formateo de duración: 
-// Método para convertir segundos a formato mm:ss
+
 const formatDuration = (seconds) => {
   if (!seconds) return '0:00'
   
@@ -194,7 +193,7 @@ const formatDuration = (seconds) => {
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
-// Funciones auxiliares para reproducción
+
 // Compruebo si la canción actual está reproduciéndose
 const isCurrentlyPlaying = (song) => 
   playerStore.currentSong?.id === song.id && playerStore.isPlaying

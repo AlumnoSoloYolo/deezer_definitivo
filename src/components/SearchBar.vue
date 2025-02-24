@@ -43,7 +43,7 @@
       </div>
     </div>
 
-    <!-- Modal de Filtros Avanzados -->
+    
     <div 
       v-if="showFiltersModal" 
       class="filters-modal"
@@ -129,7 +129,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-// Props
+
 const props = defineProps({
   initialQuery: {
     type: String,
@@ -140,12 +140,12 @@ const props = defineProps({
 const route = useRoute()
 const router = useRouter()
 
-// Estados
+
 const searchQuery = ref(props.initialQuery)
 const showFiltersModal = ref(false)
 const currentYear = new Date().getFullYear()
 
-// Filtros
+
 const filters = ref({
   genre: route.query.genre || '',
   yearFrom: route.query.yearFrom || '',
@@ -153,7 +153,7 @@ const filters = ref({
   duration: route.query.duration || ''
 })
 
-// Géneros hardcodeados (como en tu código original)
+
 const availableGenres = ref([
   { id: 132, name: 'Hip Hop' },
   { id: 116, name: 'Rock' },
@@ -162,7 +162,7 @@ const availableGenres = ref([
 ])
 
 
-// En el script setup del SearchBar.vue
+
 const fetchGenres = async () => {
   try {
     const response = await fetch('http://localhost:8080/https://api.deezer.com/genre');
@@ -186,7 +186,7 @@ onMounted(async () => {
   if (route.query.duration) filters.value.duration = route.query.duration;
 });
 
-// Métodos
+
 const toggleFiltersModal = () => {
   showFiltersModal.value = !showFiltersModal.value
 }
@@ -239,9 +239,9 @@ const resetFilters = () => {
   handleSearch()
 }
 
-// Cargo aquí los datos iniciales
+
 onMounted(() => {
-  // Restaurar filtros de la URL
+ 
   if (route.query.genre) filters.value.genre = route.query.genre
   if (route.query.yearFrom) filters.value.yearFrom = route.query.yearFrom
   if (route.query.yearTo) filters.value.yearTo = route.query.yearTo
@@ -250,7 +250,7 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
-// Variables
+
 $color-primary: #A238FF;
 $color-background: #F5F2F8;
 $color-text: #333;
@@ -258,7 +258,7 @@ $color-border: #E1DDE4;
 $spacing-base: 1rem;
 $border-radius: 8px;
 
-// Mixins
+
 @mixin flex-center {
   display: flex;
   align-items: center;
@@ -279,7 +279,7 @@ $border-radius: 8px;
 
 
 .close-modal-btn{
-  border-radius: 2px;
+  border-radius: 50%;
   background-color: tomato;
   border: 0;
   color: white;

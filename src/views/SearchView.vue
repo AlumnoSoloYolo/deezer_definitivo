@@ -220,7 +220,7 @@ const fetchResults = async (query, filters) => {
     const searchQuery = searchTerms.join(' ') || 'track';
     const urlParams = new URLSearchParams();
     urlParams.append('q', searchQuery);
-    urlParams.append('limit', '50');
+    urlParams.append('limit', '100');
 
     const url = `${baseUrl}?${urlParams.toString()}`;
     const response = await fetch(url);
@@ -230,7 +230,7 @@ const fetchResults = async (query, filters) => {
       throw new Error('No se encontraron datos');
     }
 
-    let filteredResults = [...data.data]; // Crear una copia de los resultados
+    let filteredResults = [...data.data]; 
 
     // Si hay filtro de año
     if (filters?.yearFrom || filters?.yearTo) {
@@ -256,12 +256,12 @@ const fetchResults = async (query, filters) => {
         })
       );
 
-      // Crear mapa de álbumes
+      // Creamos un map de álbumes
       const albumMap = new Map(
         albumDetails.map(detail => [detail.trackId, detail.albumData])
       );
 
-      // Filtrar por año
+      // Filtramos por año
       filteredResults = filteredResults.filter(track => {
         const albumData = albumMap.get(track.id);
         if (!albumData?.release_date) return false;
@@ -279,14 +279,14 @@ const fetchResults = async (query, filters) => {
       console.log(`Encontrados ${filteredResults.length} tracks en el rango de años`);
     }
 
-    // Aplicar filtro de duración
+    // Aplicamos filtro de duración
     if (filters?.duration) {
       filteredResults = filteredResults.filter(track => 
         track.duration <= parseInt(filters.duration)
       );
     }
 
-    // Asignar los resultados filtrados
+    // Asignamos los resultados filtrados
     results.value = filteredResults;
     console.log('Resultados finales:', results.value);
 
